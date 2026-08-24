@@ -114,34 +114,52 @@ class OnboardingTaskViewSet(viewsets.ModelViewSet):
             return OnboardingTaskDetailSerializer
         return OnboardingTaskSerializer
 
-    def _exigir_gestao(self):
+    def _exigir_alcada(self):
         """
         Checado ANTES da validação do corpo.
 
-        Se rodasse depois, quem não tem permissão receberia 400 com o
-        formato esperado do payload — um 403 que ensina a montar a
-        requisição.
+        Responde só "esta pessoa cria tarefa?" — sem olhar para quem. Se
+        rodasse depois, um colaborador comum receberia 400 com o formato
+        esperado do payload: um erro que ensina a montar a requisição.
         """
-        if not self.request.user.has_perm_code(rbac.ONBOARDING_MANAGE):
+        if not services.pode_criar_tarefas(self.request.user):
             raise PermissionDenied("Você não pode gerenciar tarefas de onboarding.")
 
+    def _exigir_escopo(self, employee):
+        """
+        Checado DEPOIS da validação, porque só aí se sabe de quem é a
+        integração. RH alcança a empresa toda; gestor e líder, a equipe.
+        """
+        if not services.pode_gerenciar_integracao_de(self.request.user, employee):
+            raise PermissionDenied(
+                "Você só gerencia a integração de quem está na sua equipe."
+            )
+
     def create(self, request, *args, **kwargs):
-        self._exigir_gestao()
+        self._exigir_alcada()
         return super().create(request, *args, **kwargs)
 
     def update(self, request, *args, **kwargs):
-        self._exigir_gestao()
+        self._exigir_alcada()
+        self._exigir_escopo(self.get_object().employee)
         return super().update(request, *args, **kwargs)
 
     def partial_update(self, request, *args, **kwargs):
-        self._exigir_gestao()
+        self._exigir_alcada()
+        self._exigir_escopo(self.get_object().employee)
         return super().partial_update(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
-        self._exigir_gestao()
+        self._exigir_alcada()
+        self._exigir_escopo(self.get_object().employee)
         return super().destroy(request, *args, **kwargs)
 
     def perform_create(self, serializer):
+        # O escopo é conferido aqui, com o `employee` já validado — e antes
+        # de qualquer gravação, então nada é criado por um gestor que não
+        # alcança essa pessoa.
+        self._exigir_escopo(serializer.validated_data["employee"])
+
         tarefa = serializer.save(
             company_id=self.request.user.company_id, created_by=self.request.user
         )

@@ -2,14 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/theme.dart';
+import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_empty_state.dart';
 import '../../../core/widgets/app_error_state.dart';
 import '../../../core/widgets/app_section_header.dart';
 import '../../../core/widgets/app_skeleton.dart';
 import '../../../shared/models/onboarding_task_model.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../../../core/widgets/app_motion.dart';
 import '../providers/onboarding_tasks_provider.dart';
 import 'widgets/onboarding_task_card.dart';
+import 'new_task_dialog.dart';
 import 'task_detail_sheet.dart';
 
 /// Tarefas de integração.
@@ -24,6 +27,10 @@ class OnboardingTasksScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tarefasAsync = ref.watch(onboardingTasksProvider);
     final filtro = ref.watch(taskFilterProvider);
+    // O botão aparece para quem tem alçada; QUAL pessoa ele alcança é
+    // decidido no servidor, que recusa com a mensagem certa.
+    final podeCriar =
+        ref.watch(authNotifierProvider).user?.canManageOnboarding ?? false;
 
     return Scaffold(
       backgroundColor: context.scaffoldBg,
@@ -35,10 +42,19 @@ class OnboardingTasksScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const AppSectionHeader(
+              AppSectionHeader(
                 title: 'Tarefas de Integração',
-                subtitle:
-                    'Acompanhe o que cada pessoa precisa fazer para concluir a integração.',
+                subtitle: podeCriar
+                    ? 'Monte e acompanhe o que cada pessoa precisa fazer para concluir a integração.'
+                    : 'Acompanhe o que cada pessoa precisa fazer para concluir a integração.',
+                trailing: podeCriar
+                    ? AppButton(
+                        text: 'Nova Tarefa',
+                        icon: Icons.add,
+                        size: AppButtonSize.sm,
+                        onPressed: () => _abrirFormulario(context, ref),
+                      )
+                    : null,
               ),
               const SizedBox(height: AppSpacing.xl),
               _Filtros(filtro: filtro),
@@ -98,6 +114,13 @@ class OnboardingTasksScreen extends ConsumerWidget {
     if (filtro.onlyMine) return 'Você não tem tarefas de integração atribuídas.';
     if (filtro.status == 'completed') return 'Nenhuma tarefa concluída ainda.';
     return 'Nenhuma tarefa de integração foi criada até agora.';
+  }
+
+  void _abrirFormulario(BuildContext context, WidgetRef ref) {
+    showDialog<void>(
+      context: context,
+      builder: (_) => const NewTaskDialog(),
+    ).then((_) => ref.invalidate(onboardingTasksProvider));
   }
 
   void _abrirDetalhe(

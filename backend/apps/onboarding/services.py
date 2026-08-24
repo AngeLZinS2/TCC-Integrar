@@ -16,6 +16,7 @@ from apps.audit import services as audit
 from apps.audit.models import AuditLog
 from apps.notifications.channels import Category, notify
 from apps.users import rbac
+from apps.users.scopes import managed_users_filter
 
 from .models import OnboardingTask, OnboardingTemplate, TemplateTask
 
@@ -194,6 +195,50 @@ def aplicar_templates_automaticos(employee, *, criado_por=None) -> list:
 
 
 # ── Mudança de estado ───────────────────────────────────────────────────────
+
+def e_da_minha_equipe(user, employee) -> bool:
+    """
+    `employee` está sob a responsabilidade de `user`?
+
+    Usa o MESMO filtro que decide o que o gestor enxerga na listagem. Se as
+    duas regras divergissem, ele veria uma tarefa que não pode editar — ou,
+    pior, editaria alguém que não deveria nem aparecer para ele.
+    """
+    from apps.users.models import User
+
+    return (
+        User.objects.filter(pk=employee.pk, company_id=user.company_id)
+        .filter(managed_users_filter(user))
+        .exists()
+    )
+
+
+def pode_gerenciar_integracao_de(user, employee) -> bool:
+    """
+    Pode criar, editar ou excluir tarefas da integração DESTE colaborador?
+
+    RH e admin: qualquer pessoa da empresa. Gestor e líder de setor: só a
+    própria equipe — mesmo desenho já usado em treinamentos e materiais.
+
+    Repare que isto responde "sobre QUEM", e não "pode criar tarefa?". As
+    duas perguntas são separadas de propósito: quem não pode nada recebe
+    403 antes de o corpo da requisição ser sequer validado.
+    """
+    if user.has_perm_code(rbac.ONBOARDING_MANAGE):
+        return True
+    if user.is_gestor or user.is_sector_leader:
+        return e_da_minha_equipe(user, employee)
+    return False
+
+
+def pode_criar_tarefas(user) -> bool:
+    """Tem alguma alçada para criar tarefa — sem olhar para quem."""
+    return bool(
+        user.has_perm_code(rbac.ONBOARDING_MANAGE)
+        or user.is_gestor
+        or user.is_sector_leader
+    )
+
 
 def pode_concluir(tarefa: OnboardingTask, user) -> bool:
     """

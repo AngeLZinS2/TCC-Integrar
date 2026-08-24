@@ -87,6 +87,12 @@ class UserModel {
   bool get canCreateEmployees => can(Perm.employeesCreate);
   bool get canEditEmployees => can(Perm.employeesUpdate);
   bool get canManageOrg => can(Perm.departmentsCreate);
+
+  /// Monta plano de integração: RH e admin em toda a empresa, gestor e
+  /// líder de setor só na própria equipe. O recorte por equipe é do
+  /// servidor — aqui é só para decidir se o botão aparece.
+  bool get canManageOnboarding =>
+      managesCompany || isGestor || isSectorLeader;
   bool get canViewDashboard => can(Perm.dashboardRead);
   bool get canViewAudit => can(Perm.auditRead);
   bool get canEditCompany => can(Perm.companyUpdate);

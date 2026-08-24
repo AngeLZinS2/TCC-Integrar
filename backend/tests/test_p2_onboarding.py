@@ -314,6 +314,93 @@ class TestPermissao:
         assert resp.status_code == 400
         assert "assigned_to" in resp.data
 
+    def test_gestor_cria_tarefa_para_a_propria_equipe(
+        self, api_client, gestor, colab, rh
+    ):
+        """
+        Mesmo desenho de treinamentos e materiais: o gestor monta a
+        integração de quem está sob a responsabilidade dele.
+        """
+        api_client.force_authenticate(user=gestor)
+        resp = api_client.post(
+            TASKS,
+            {"title": "Apresentar o time", "employee": colab.id,
+             "assigned_to": gestor.id},
+            format="json",
+        )
+        assert resp.status_code == 201, resp.data
+
+    def test_gestor_nao_cria_para_quem_esta_fora_da_equipe(
+        self, api_client, gestor, outro_colab
+    ):
+        api_client.force_authenticate(user=gestor)
+        resp = api_client.post(
+            TASKS, {"title": "X", "employee": outro_colab.id}, format="json"
+        )
+        assert resp.status_code == 403
+        assert "equipe" in str(resp.data).lower()
+
+    def test_gestor_pode_atribuir_execucao_ao_rh(
+        self, api_client, gestor, colab, rh
+    ):
+        """
+        As etapas de uma integração são de gente diferente. Travar o gestor
+        em "só atribuir à própria equipe" tornaria a criação inútil: quem
+        cria acesso é o RH.
+        """
+        api_client.force_authenticate(user=gestor)
+        resp = api_client.post(
+            TASKS,
+            {"title": "Criar acessos", "employee": colab.id, "assigned_to": rh.id},
+            format="json",
+        )
+        assert resp.status_code == 201, resp.data
+
+    def test_gestor_edita_tarefa_da_equipe(self, api_client, gestor, tarefa):
+        api_client.force_authenticate(user=gestor)
+        resp = api_client.patch(
+            f"{TASKS}{tarefa.id}/", {"title": "Título novo"}, format="json"
+        )
+        assert resp.status_code == 200
+        tarefa.refresh_from_db()
+        assert tarefa.title == "Título novo"
+
+    def test_gestor_nao_edita_tarefa_de_fora_da_equipe(
+        self, api_client, company, gestor, outro_colab, rh
+    ):
+        alheia = OnboardingTask.objects.create(
+            company=company, employee=outro_colab, assigned_to=rh, title="De fora"
+        )
+        api_client.force_authenticate(user=gestor)
+        resp = api_client.patch(
+            f"{TASKS}{alheia.id}/", {"title": "Invadindo"}, format="json"
+        )
+        # 404 porque ela nem aparece no escopo dele; 403 se aparecesse.
+        assert resp.status_code in {403, 404}
+        alheia.refresh_from_db()
+        assert alheia.title == "De fora"
+
+    def test_gestor_exclui_tarefa_da_equipe(self, api_client, gestor, tarefa):
+        api_client.force_authenticate(user=gestor)
+        assert api_client.delete(f"{TASKS}{tarefa.id}/").status_code == 204
+
+    def test_colaborador_com_flag_de_lider_sem_equipe_nao_cria(
+        self, api_client, django_user_model, company, setor, colab
+    ):
+        """
+        A flag sozinha não basta: o escopo vem de ser gestor de alguém, e
+        não de um booleano no cadastro.
+        """
+        lider = mk(
+            django_user_model, "lider-solto@x.com", "colaborador", company,
+            sector=setor, is_sector_leader=True,
+        )
+        api_client.force_authenticate(user=lider)
+        resp = api_client.post(
+            TASKS, {"title": "X", "employee": colab.id}, format="json"
+        )
+        assert resp.status_code == 403
+
     def test_nao_cria_tarefa_para_colaborador_de_outra_empresa(
         self, api_client, django_user_model, empresa_b, rh
     ):
