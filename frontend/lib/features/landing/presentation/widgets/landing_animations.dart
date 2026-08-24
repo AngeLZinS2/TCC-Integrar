@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../app/theme.dart';
+import '../../../../core/widgets/app_motion.dart';
 
 /// Peças de animação da landing.
 ///
@@ -9,8 +10,8 @@ import '../../../../app/theme.dart';
 /// a página inteira, já posicionada, sem transição nenhuma. Animação que
 /// ignora essa preferência não é charme — é barreira.
 
-bool _semMovimento(BuildContext context) =>
-    MediaQuery.of(context).disableAnimations;
+// `prefereMovimentoReduzido` e `duracaoDe` vêm de `app_motion.dart`: o
+// vocabulário de movimento é um só no app inteiro.
 
 /// Distribui o offset da rolagem para os widgets que revelam ao entrar em
 /// tela.
@@ -59,9 +60,23 @@ class RevealOnScroll extends StatefulWidget {
 
 class _RevealOnScrollState extends State<RevealOnScroll>
     with SingleTickerProviderStateMixin {
+  late final int _totalMs = widget.delay.inMilliseconds + 520;
+
   late final AnimationController _controle = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 520),
+    duration: Duration(milliseconds: _totalMs),
+  );
+
+  /// O atraso é um trecho morto no início da própria animação, e não um
+  /// `Future.delayed`: um timer descartado deixaria o bloco invisível para
+  /// sempre.
+  late final Animation<double> _progresso = CurvedAnimation(
+    parent: _controle,
+    curve: Interval(
+      widget.delay.inMilliseconds / _totalMs,
+      1,
+      curve: Curves.easeOutCubic,
+    ),
   );
   final _chave = GlobalKey();
   ValueNotifier<double>? _rolagem;
@@ -76,7 +91,7 @@ class _RevealOnScrollState extends State<RevealOnScroll>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_semMovimento(context)) {
+    if (prefereMovimentoReduzido(context)) {
       _revelado = true;
       _controle.value = 1;
       return;
@@ -103,13 +118,7 @@ class _RevealOnScrollState extends State<RevealOnScroll>
     if (topo < alturaDaTela * 0.88) {
       _revelado = true;
       _rolagem?.removeListener(_conferir);
-      if (widget.delay == Duration.zero) {
-        _controle.forward();
-      } else {
-        Future<void>.delayed(widget.delay, () {
-          if (mounted) _controle.forward();
-        });
-      }
+      _controle.forward();
     }
   }
 
@@ -124,9 +133,9 @@ class _RevealOnScrollState extends State<RevealOnScroll>
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       key: _chave,
-      animation: _controle,
+      animation: _progresso,
       builder: (context, filho) {
-        final t = Curves.easeOutCubic.transform(_controle.value);
+        final t = _progresso.value;
         return Opacity(
           opacity: t,
           child: Transform.translate(
@@ -136,129 +145,6 @@ class _RevealOnScrollState extends State<RevealOnScroll>
         );
       },
       child: widget.child,
-    );
-  }
-}
-
-/// Entrada escalonada, para o conteúdo que já está em tela ao carregar.
-///
-/// Não depende de rolagem: começa sozinha assim que a página monta.
-class EntradaEscalonada extends StatefulWidget {
-  final Widget child;
-  final Duration delay;
-
-  const EntradaEscalonada({
-    super.key,
-    required this.child,
-    this.delay = Duration.zero,
-  });
-
-  @override
-  State<EntradaEscalonada> createState() => _EntradaEscalonadaState();
-}
-
-class _EntradaEscalonadaState extends State<EntradaEscalonada>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controle = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 620),
-  );
-  bool _iniciado = false;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_iniciado) return;
-    _iniciado = true;
-
-    if (_semMovimento(context)) {
-      _controle.value = 1;
-      return;
-    }
-    Future<void>.delayed(widget.delay, () {
-      if (mounted) _controle.forward();
-    });
-  }
-
-  @override
-  void dispose() {
-    _controle.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controle,
-      builder: (context, filho) {
-        final t = Curves.easeOutCubic.transform(_controle.value);
-        return Opacity(
-          opacity: t,
-          child: Transform.translate(
-            offset: Offset(0, 24 * (1 - t)),
-            child: filho,
-          ),
-        );
-      },
-      child: widget.child,
-    );
-  }
-}
-
-/// Cartão que reage ao ponteiro: sobe de leve e ganha sombra.
-///
-/// O movimento existe para dizer "isto responde ao seu mouse". No toque não
-/// há ponteiro, então nada muda — e é por isso que o cartão não depende
-/// disto para ser legível.
-class ElevarNoHover extends StatefulWidget {
-  final Widget child;
-  final double elevacao;
-
-  const ElevarNoHover({
-    super.key,
-    required this.child,
-    this.elevacao = 6,
-  });
-
-  @override
-  State<ElevarNoHover> createState() => _ElevarNoHoverState();
-}
-
-class _ElevarNoHoverState extends State<ElevarNoHover> {
-  bool _sobre = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final reduzido = _semMovimento(context);
-
-    return MouseRegion(
-      onEnter: (_) => setState(() => _sobre = true),
-      onExit: (_) => setState(() => _sobre = false),
-      child: AnimatedContainer(
-        duration: Duration(milliseconds: reduzido ? 0 : 200),
-        curve: Curves.easeOut,
-        transform: Matrix4.translationValues(
-          0,
-          _sobre && !reduzido ? -widget.elevacao : 0,
-          0,
-        ),
-        child: AnimatedContainer(
-          duration: Duration(milliseconds: reduzido ? 0 : 200),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-            boxShadow: _sobre
-                ? [
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.18),
-                      blurRadius: 24,
-                      offset: const Offset(0, 10),
-                    ),
-                  ]
-                : const [],
-          ),
-          child: widget.child,
-        ),
-      ),
     );
   }
 }
@@ -292,7 +178,7 @@ class _BotaoAcessoState extends State<BotaoAcesso> {
 
   @override
   Widget build(BuildContext context) {
-    final reduzido = _semMovimento(context);
+    final reduzido = prefereMovimentoReduzido(context);
     final duracao = Duration(milliseconds: reduzido ? 0 : 180);
     final ativo = _sobre && !reduzido;
 

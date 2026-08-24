@@ -9,6 +9,7 @@ import '../../../core/widgets/app_section_header.dart';
 import '../../../core/widgets/app_skeleton.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../providers/events_provider.dart';
+import '../../../core/widgets/app_motion.dart';
 import '../../../shared/models/event_model.dart';
 
 class EventsScreen extends ConsumerWidget {
@@ -79,7 +80,8 @@ class EventsScreen extends ConsumerWidget {
           style: context.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: AppSpacing.lg),
-        eventsAsync.when(
+        eventsAsync.whenAnimado(
+                context,
           loading: () => ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -107,7 +109,10 @@ class EventsScreen extends ConsumerWidget {
               separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
               itemBuilder: (context, index) {
                 final event = events[index];
-                return _EventCard(event: event);
+                return AppFadeIn(
+                  delay: AppFadeIn.escalonar(index),
+                  child: _EventCard(event: event),
+                );
               },
             );
           },

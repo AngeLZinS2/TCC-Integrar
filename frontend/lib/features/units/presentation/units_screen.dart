@@ -12,6 +12,7 @@ import '../../../core/widgets/app_skeleton.dart';
 import '../../../core/widgets/custom_text_field.dart';
 import '../../../shared/models/unit_model.dart';
 import '../providers/units_provider.dart';
+import '../../../core/widgets/app_motion.dart';
 
 /// Unidades (filiais) da empresa.
 ///
@@ -46,7 +47,8 @@ class UnitsScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: AppSpacing.xl),
-              unidadesAsync.when(
+              unidadesAsync.whenAnimado(
+                context,
                 loading: () => GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -87,12 +89,15 @@ class UnitsScreen extends ConsumerWidget {
                       mainAxisSpacing: AppSpacing.lg,
                     ),
                     itemCount: unidades.length,
-                    itemBuilder: (_, i) => _UnitCard(
-                      unit: unidades[i],
-                      onDelete: () => _confirmarExclusao(
-                        context,
-                        ref,
-                        unidades[i],
+                    itemBuilder: (_, i) => AppFadeIn(
+                      delay: AppFadeIn.escalonar(i),
+                      child: _UnitCard(
+                        unit: unidades[i],
+                        onDelete: () => _confirmarExclusao(
+                          context,
+                          ref,
+                          unidades[i],
+                        ),
                       ),
                     ),
                   );

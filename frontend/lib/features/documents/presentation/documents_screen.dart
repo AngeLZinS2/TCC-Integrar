@@ -9,6 +9,7 @@ import '../../../core/widgets/app_section_header.dart';
 import '../../../core/widgets/app_skeleton.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../providers/documents_provider.dart';
+import '../../../core/widgets/app_motion.dart';
 import '../../../shared/models/document_model.dart';
 
 class DocumentsScreen extends ConsumerWidget {
@@ -44,7 +45,8 @@ class DocumentsScreen extends ConsumerWidget {
               ),
               const SizedBox(height: AppSpacing.xl),
               
-              documentsAsync.when(
+              documentsAsync.whenAnimado(
+                context,
                 loading: () => ListView.separated(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -73,7 +75,10 @@ class DocumentsScreen extends ConsumerWidget {
                     separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
                     itemBuilder: (context, index) {
                       final doc = documents[index];
-                      return _DocumentListItem(document: doc);
+                      return AppFadeIn(
+                        delay: AppFadeIn.escalonar(index),
+                        child: _DocumentListItem(document: doc),
+                      );
                     },
                   );
                 },

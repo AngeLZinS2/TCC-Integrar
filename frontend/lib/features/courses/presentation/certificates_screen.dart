@@ -10,6 +10,7 @@ import '../../../core/widgets/app_section_header.dart';
 import '../../../core/widgets/app_skeleton.dart';
 import '../../../shared/models/quiz_model.dart';
 import '../providers/quiz_provider.dart';
+import '../../../core/widgets/app_motion.dart';
 
 /// Certificados emitidos.
 ///
@@ -38,7 +39,8 @@ class CertificatesScreen extends ConsumerWidget {
                     'Comprovantes de conclusão emitidos na aprovação das avaliações.',
               ),
               const SizedBox(height: AppSpacing.xl),
-              certificadosAsync.when(
+              certificadosAsync.whenAnimado(
+                context,
                 loading: () => GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -77,8 +79,10 @@ class CertificatesScreen extends ConsumerWidget {
                       mainAxisSpacing: AppSpacing.lg,
                     ),
                     itemCount: certificados.length,
-                    itemBuilder: (_, i) =>
-                        _CertificateCard(certificate: certificados[i]),
+                    itemBuilder: (_, i) => AppFadeIn(
+                      delay: AppFadeIn.escalonar(i),
+                      child: _CertificateCard(certificate: certificados[i]),
+                    ),
                   );
                 },
               ),

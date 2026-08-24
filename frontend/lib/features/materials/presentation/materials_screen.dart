@@ -9,6 +9,7 @@ import '../../../core/widgets/app_section_header.dart';
 import '../../../core/widgets/app_skeleton.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../providers/material_provider.dart';
+import '../../../core/widgets/app_motion.dart';
 import 'widgets/material_card.dart';
 
 class MaterialsScreen extends ConsumerStatefulWidget {
@@ -52,7 +53,8 @@ class _MaterialsScreenState extends ConsumerState<MaterialsScreen> {
               ),
               const SizedBox(height: AppSpacing.lg),
 
-              materialsAsync.when(
+              materialsAsync.whenAnimado(
+                context,
                 loading: () => GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -98,16 +100,19 @@ class _MaterialsScreenState extends ConsumerState<MaterialsScreen> {
                     itemCount: filtered.length,
                     itemBuilder: (context, index) {
                       final material = filtered[index];
-                      return MaterialCard(
-                        material: material,
-                        onOpen: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Abrindo ${material.title}: ${material.fileUrl}'),
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
-                        },
+                      return AppFadeIn(
+                        delay: AppFadeIn.escalonar(index),
+                        child: MaterialCard(
+                          material: material,
+                          onOpen: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Abrindo ${material.title}: ${material.fileUrl}'),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          },
+                        ),
                       );
                     },
                   );

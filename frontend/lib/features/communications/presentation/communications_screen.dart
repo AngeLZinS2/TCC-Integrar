@@ -9,6 +9,7 @@ import '../../../core/widgets/app_section_header.dart';
 import '../../../core/widgets/app_skeleton.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../providers/communications_provider.dart';
+import '../../../core/widgets/app_motion.dart';
 import '../../../shared/models/announcement_model.dart';
 
 class CommunicationsScreen extends ConsumerStatefulWidget {
@@ -49,7 +50,8 @@ class _CommunicationsScreenState extends ConsumerState<CommunicationsScreen> {
               ),
               const SizedBox(height: AppSpacing.xl),
               
-              communicationsAsync.when(
+              communicationsAsync.whenAnimado(
+                context,
                 loading: () => ListView.separated(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -78,7 +80,10 @@ class _CommunicationsScreenState extends ConsumerState<CommunicationsScreen> {
                     separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.lg),
                     itemBuilder: (context, index) {
                       final announcement = announcements[index];
-                      return _AnnouncementCard(announcement: announcement);
+                      return AppFadeIn(
+                        delay: AppFadeIn.escalonar(index),
+                        child: _AnnouncementCard(announcement: announcement),
+                      );
                     },
                   );
                 },

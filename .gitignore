@@ -22,6 +22,13 @@ db.sqlite3-journal
 mediafiles/
 staticfiles/
 
+# Scripts de QA descartaveis, criados durante verificacao ao vivo.
+# Nunca sao parte do sistema, e alguns criam usuario com senha fixa.
+backend/qa_*.py
+backend/seed_*.py
+backend/cleanup_*.py
+backend/listar_*.py
+
 # Secrets — NUNCA commitar o .env real
 backend/.env
 .env

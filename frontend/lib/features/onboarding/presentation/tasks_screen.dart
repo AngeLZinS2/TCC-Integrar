@@ -7,6 +7,7 @@ import '../../../core/widgets/app_error_state.dart';
 import '../../../core/widgets/app_section_header.dart';
 import '../../../core/widgets/app_skeleton.dart';
 import '../../../shared/models/onboarding_task_model.dart';
+import '../../../core/widgets/app_motion.dart';
 import '../providers/onboarding_tasks_provider.dart';
 import 'widgets/onboarding_task_card.dart';
 import 'task_detail_sheet.dart';
@@ -42,7 +43,8 @@ class OnboardingTasksScreen extends ConsumerWidget {
               const SizedBox(height: AppSpacing.xl),
               _Filtros(filtro: filtro),
               const SizedBox(height: AppSpacing.lg),
-              tarefasAsync.when(
+              tarefasAsync.whenAnimado(
+                context,
                 loading: () => Column(
                   children: List.generate(
                     4,

@@ -8,6 +8,7 @@ import '../../../core/widgets/app_error_state.dart';
 import '../../../core/widgets/app_section_header.dart';
 import '../../../core/widgets/app_skeleton.dart';
 import '../providers/requests_provider.dart';
+import '../../../core/widgets/app_motion.dart';
 import 'widgets/request_card.dart';
 
 class RequestsScreen extends ConsumerStatefulWidget {
@@ -53,7 +54,8 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
               _buildFilters(),
               const SizedBox(height: AppSpacing.lg),
 
-              requestsAsync.when(
+              requestsAsync.whenAnimado(
+                context,
                 loading: () => GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -92,9 +94,12 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
                     itemCount: requests.length,
                     itemBuilder: (context, index) {
                       final request = requests[index];
-                      return RequestCard(
-                        request: request,
-                        onTap: () => context.push('/requests/${request.id}'),
+                      return AppFadeIn(
+                        delay: AppFadeIn.escalonar(index),
+                        child: RequestCard(
+                          request: request,
+                          onTap: () => context.push('/requests/${request.id}'),
+                        ),
                       );
                     },
                   );

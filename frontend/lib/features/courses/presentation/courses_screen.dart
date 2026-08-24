@@ -9,6 +9,7 @@ import '../../../core/widgets/app_section_header.dart';
 import '../../../core/widgets/app_skeleton.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../providers/course_provider.dart';
+import '../../../core/widgets/app_motion.dart';
 import 'widgets/course_card.dart';
 import 'widgets/course_filter_segmented.dart';
 
@@ -64,7 +65,8 @@ class _CoursesScreenState extends ConsumerState<CoursesScreen> {
               const SizedBox(height: AppSpacing.lg),
 
               // Courses Grid / List
-              coursesAsync.when(
+              coursesAsync.whenAnimado(
+                context,
                 loading: () => GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -120,9 +122,12 @@ class _CoursesScreenState extends ConsumerState<CoursesScreen> {
                     itemCount: filtered.length,
                     itemBuilder: (context, index) {
                       final course = filtered[index];
-                      return CourseCard(
-                        course: course,
-                        onTap: () => context.push('/courses/${course.id}'),
+                      return AppFadeIn(
+                        delay: AppFadeIn.escalonar(index),
+                        child: CourseCard(
+                          course: course,
+                          onTap: () => context.push('/courses/${course.id}'),
+                        ),
                       );
                     },
                   );

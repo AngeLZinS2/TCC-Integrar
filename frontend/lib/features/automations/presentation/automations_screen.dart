@@ -10,6 +10,7 @@ import '../../../core/widgets/app_error_state.dart';
 import '../../../core/widgets/app_section_header.dart';
 import '../../../core/widgets/app_skeleton.dart';
 import '../../../shared/models/automation_model.dart';
+import '../../../core/widgets/app_motion.dart';
 import '../providers/automations_provider.dart';
 import 'new_automation_dialog.dart';
 
@@ -46,7 +47,8 @@ class AutomationsScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: AppSpacing.xl),
-              regrasAsync.when(
+              regrasAsync.whenAnimado(
+                context,
                 loading: () => Column(
                   children: List.generate(
                     3,

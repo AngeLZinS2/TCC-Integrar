@@ -43,6 +43,7 @@ import '../features/rh_dashboard/presentation/collaborator_detail_screen.dart';
 import '../features/rh_dashboard/presentation/collaborators_list_screen.dart';
 import '../features/rh_dashboard/presentation/new_collaborator_screen.dart';
 import '../features/rh_dashboard/presentation/rh_dashboard_screen.dart';
+import '../core/widgets/app_motion.dart';
 import '../features/shell/presentation/app_shell.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -304,134 +305,153 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/onboarding',
             name: 'onboarding',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: OnboardingScreen(),
+            pageBuilder: (context, state) => paginaComTransicao(
+              chave: state.pageKey,
+              filho: const OnboardingScreen(),
             ),
           ),
           GoRoute(
             path: '/courses',
             name: 'courses',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: CoursesScreen(),
+            pageBuilder: (context, state) => paginaComTransicao(
+              chave: state.pageKey,
+              filho: const CoursesScreen(),
             ),
           ),
           GoRoute(
             path: '/checklist',
             name: 'checklist',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: ChecklistScreen(),
+            pageBuilder: (context, state) => paginaComTransicao(
+              chave: state.pageKey,
+              filho: const ChecklistScreen(),
             ),
           ),
           GoRoute(
             path: '/requests',
             name: 'requests',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: RequestsScreen(),
+            pageBuilder: (context, state) => paginaComTransicao(
+              chave: state.pageKey,
+              filho: const RequestsScreen(),
             ),
           ),
           GoRoute(
             path: '/communications',
             name: 'communications',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: CommunicationsScreen(),
+            pageBuilder: (context, state) => paginaComTransicao(
+              chave: state.pageKey,
+              filho: const CommunicationsScreen(),
             ),
           ),
           GoRoute(
             path: '/events',
             name: 'events',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: EventsScreen(),
+            pageBuilder: (context, state) => paginaComTransicao(
+              chave: state.pageKey,
+              filho: const EventsScreen(),
             ),
           ),
           GoRoute(
             path: '/documents',
             name: 'documents',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: DocumentsScreen(),
+            pageBuilder: (context, state) => paginaComTransicao(
+              chave: state.pageKey,
+              filho: const DocumentsScreen(),
             ),
           ),
           GoRoute(
             path: '/onboarding/tasks',
             name: 'onboarding_tasks',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: OnboardingTasksScreen(),
+            pageBuilder: (context, state) => paginaComTransicao(
+              chave: state.pageKey,
+              filho: const OnboardingTasksScreen(),
             ),
           ),
           GoRoute(
             path: '/certificates',
             name: 'certificates',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: CertificatesScreen(),
+            pageBuilder: (context, state) => paginaComTransicao(
+              chave: state.pageKey,
+              filho: const CertificatesScreen(),
             ),
           ),
           GoRoute(
             path: '/units',
             name: 'units',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: UnitsScreen(),
+            pageBuilder: (context, state) => paginaComTransicao(
+              chave: state.pageKey,
+              filho: const UnitsScreen(),
             ),
           ),
           GoRoute(
             path: '/automations',
             name: 'automations',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: AutomationsScreen(),
+            pageBuilder: (context, state) => paginaComTransicao(
+              chave: state.pageKey,
+              filho: const AutomationsScreen(),
             ),
           ),
           GoRoute(
             path: '/audit',
             name: 'audit',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: AuditScreen(),
+            pageBuilder: (context, state) => paginaComTransicao(
+              chave: state.pageKey,
+              filho: const AuditScreen(),
             ),
           ),
           GoRoute(
             path: '/company/settings',
             name: 'company_settings',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: CompanySettingsScreen(),
+            pageBuilder: (context, state) => paginaComTransicao(
+              chave: state.pageKey,
+              filho: const CompanySettingsScreen(),
             ),
           ),
           GoRoute(
             path: '/org/sectors',
             name: 'sectors',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: SectorsScreen(),
+            pageBuilder: (context, state) => paginaComTransicao(
+              chave: state.pageKey,
+              filho: const SectorsScreen(),
             ),
           ),
           GoRoute(
             path: '/org/positions',
             name: 'positions',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: PositionsScreen(),
+            pageBuilder: (context, state) => paginaComTransicao(
+              chave: state.pageKey,
+              filho: const PositionsScreen(),
             ),
           ),
           GoRoute(
             path: '/materials',
             name: 'materials',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: MaterialsScreen(),
+            pageBuilder: (context, state) => paginaComTransicao(
+              chave: state.pageKey,
+              filho: const MaterialsScreen(),
             ),
           ),
           GoRoute(
             path: '/notifications',
             name: 'notifications',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: NotificationsScreen(),
+            pageBuilder: (context, state) => paginaComTransicao(
+              chave: state.pageKey,
+              filho: const NotificationsScreen(),
             ),
           ),
           GoRoute(
             path: '/profile',
             name: 'profile',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: ProfileScreen(),
+            pageBuilder: (context, state) => paginaComTransicao(
+              chave: state.pageKey,
+              filho: const ProfileScreen(),
             ),
           ),
           GoRoute(
             path: '/directory',
             name: 'directory',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: DirectoryScreen(),
+            pageBuilder: (context, state) => paginaComTransicao(
+              chave: state.pageKey,
+              filho: const DirectoryScreen(),
             ),
           ),
 
@@ -439,15 +459,17 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/rh/dashboard',
             name: 'rh_dashboard',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: RhDashboardScreen(),
+            pageBuilder: (context, state) => paginaComTransicao(
+              chave: state.pageKey,
+              filho: const RhDashboardScreen(),
             ),
           ),
           GoRoute(
             path: '/rh/collaborators',
             name: 'rh_collaborators',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: CollaboratorsListScreen(),
+            pageBuilder: (context, state) => paginaComTransicao(
+              chave: state.pageKey,
+              filho: const CollaboratorsListScreen(),
             ),
           ),
 
@@ -455,15 +477,17 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/owner/dashboard',
             name: 'owner_dashboard',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: OwnerDashboardScreen(),
+            pageBuilder: (context, state) => paginaComTransicao(
+              chave: state.pageKey,
+              filho: const OwnerDashboardScreen(),
             ),
           ),
           GoRoute(
             path: '/owner/companies',
             name: 'owner_companies',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: CompaniesListScreen(),
+            pageBuilder: (context, state) => paginaComTransicao(
+              chave: state.pageKey,
+              filho: const CompaniesListScreen(),
             ),
           ),
         ],

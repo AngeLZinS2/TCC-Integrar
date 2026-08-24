@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/theme.dart';
+import '../../../core/widgets/app_motion.dart';
 import 'widgets/landing_animations.dart';
 
 /// Página pública de apresentação do sistema.
@@ -102,8 +103,8 @@ class _Cabecalho extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Flexible(child: EntradaEscalonada(child: _Marca())),
-          EntradaEscalonada(
+          const Flexible(child: AppFadeIn(child: _Marca())),
+          AppFadeIn(
             delay: const Duration(milliseconds: 90),
             child: BotaoAcesso(
               rotulo: 'Entrar',
@@ -222,7 +223,7 @@ class _HeroTexto extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        EntradaEscalonada(
+        AppFadeIn(
           delay: const Duration(milliseconds: 120),
           child: Container(
             padding: const EdgeInsets.symmetric(
@@ -267,7 +268,7 @@ class _HeroTexto extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppSpacing.xxl),
-        EntradaEscalonada(
+        AppFadeIn(
           delay: const Duration(milliseconds: 200),
           child: Text(
             'Do primeiro dia ao primeiro resultado.',
@@ -281,7 +282,7 @@ class _HeroTexto extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppSpacing.xl),
-        const EntradaEscalonada(
+        const AppFadeIn(
           delay: Duration(milliseconds: 300),
           child: Text(
             'A plataforma que organiza a integração de novos colaboradores: '
@@ -296,7 +297,7 @@ class _HeroTexto extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppSpacing.xxxl),
-        EntradaEscalonada(
+        AppFadeIn(
           delay: const Duration(milliseconds: 400),
           child: BotaoAcesso(
             // No celular o rótulo curto cabe inteiro; a frase completa fica
@@ -308,7 +309,7 @@ class _HeroTexto extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppSpacing.xxl),
-        const EntradaEscalonada(
+        const AppFadeIn(
           delay: Duration(milliseconds: 480),
           child: Text(
             'Acesso restrito a colaboradores cadastrados pela sua empresa.',
@@ -329,7 +330,7 @@ class _HeroPainel extends StatelessWidget {
   Widget build(BuildContext context) {
     final reduzido = MediaQuery.of(context).disableAnimations;
 
-    return EntradaEscalonada(
+    return AppFadeIn(
       delay: const Duration(milliseconds: 260),
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.xxl),
@@ -427,7 +428,7 @@ class _LinhaPendencia extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return EntradaEscalonada(
+    return AppFadeIn(
       delay: delay,
       child: Padding(
         padding: const EdgeInsets.only(bottom: AppSpacing.md),
@@ -547,7 +548,7 @@ class _CartaoModulo extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       label: '$titulo. $descricao',
-      child: ElevarNoHover(
+      child: AppHoverLift(
         child: Container(
           padding: const EdgeInsets.all(AppSpacing.xxl),
           decoration: BoxDecoration(
@@ -750,7 +751,7 @@ class _ParaCadaPapel extends StatelessWidget {
                       : constraints.maxWidth,
                   child: RevealOnScroll(
                     delay: Duration(milliseconds: 90 * indice),
-                    child: ElevarNoHover(
+                    child: AppHoverLift(
                       elevacao: 4,
                       child: Container(
                         padding: const EdgeInsets.all(AppSpacing.xxl),
