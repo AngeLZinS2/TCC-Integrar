@@ -19,8 +19,3 @@ final myAttemptsProvider =
     FutureProvider.autoDispose<PaginatedResponse<QuizAttempt>>((ref) {
   return ref.watch(quizRepositoryProvider).getMyAttempts();
 });
-
-final certificatesProvider =
-    FutureProvider.autoDispose<PaginatedResponse<CertificateModel>>((ref) {
-  return ref.watch(quizRepositoryProvider).getCertificates();
-});

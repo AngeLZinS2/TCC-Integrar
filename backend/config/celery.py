@@ -11,7 +11,6 @@ Vai para a fila:
   - envio de e-mail (rede, pode falhar, precisa de retry);
   - notificação em massa (milhares de linhas);
   - publicação agendada de comunicado;
-  - geração de certificado;
   - criação de tarefas de onboarding a partir de template.
 
 Continua síncrono:

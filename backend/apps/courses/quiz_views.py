@@ -1,5 +1,5 @@
 """
-Endpoints da avaliação e dos certificados.
+Endpoints da avaliação.
 """
 
 from django.shortcuts import get_object_or_404
@@ -15,10 +15,8 @@ from apps.users import rbac
 
 from . import quiz_services
 from .models import Course
-from .quiz_models import Certificate, Question, Quiz, QuizAttempt
+from .quiz_models import Question, Quiz, QuizAttempt
 from .quiz_serializers import (
-    CertificateSerializer,
-    PublicCertificateSerializer,
     QuestionAdminSerializer,
     QuizAdminSerializer,
     QuizAttemptResultSerializer,
@@ -212,57 +210,4 @@ class MyAttemptsView(generics.ListAPIView):
             )
             .select_related("quiz__course")
             .order_by("-started_at")
-        )
-
-
-class CertificateViewSet(viewsets.ReadOnlyModelViewSet):
-    """
-    Certificados. Somente leitura: emitir é consequência de ser aprovado,
-    não uma ação que alguém dispara.
-    """
-
-    serializer_class = CertificateSerializer
-    permission_classes = [permissions.IsAuthenticated]
-    lookup_field = "code"
-
-    def get_queryset(self):
-        user = self.request.user
-        if not user.is_authenticated or not user.company_id:
-            return Certificate.objects.none()
-
-        queryset = Certificate.objects.filter(
-            company_id=user.company_id
-        ).select_related("user", "course", "company")
-
-        # RH vê os da empresa para conferir compliance; os demais, só os
-        # próprios.
-        if not user.manages_company:
-            queryset = queryset.filter(user=user)
-        return queryset.order_by("-issued_at")
-
-
-class CertificateValidationView(APIView):
-    """
-    GET /api/v1/certificates/validate/<code>/
-
-    Rota PÚBLICA: um certificado serve para ser conferido por quem está
-    fora do sistema — o RH de outra empresa, por exemplo. Devolve só o
-    necessário para confirmar autenticidade (ver PublicCertificateSerializer).
-    """
-
-    permission_classes = [permissions.AllowAny]
-    authentication_classes = []
-
-    def get(self, request, code):
-        certificado = Certificate.objects.filter(code=code.upper().strip()).select_related(
-            "user", "course", "company"
-        ).first()
-
-        if certificado is None:
-            return Response(
-                {"valid": False, "detail": "Certificado não encontrado."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-        return Response(
-            {"valid": True, "certificate": PublicCertificateSerializer(certificado).data}
         )

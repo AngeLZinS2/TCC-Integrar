@@ -21,7 +21,6 @@ from apps.automations.models import AutomationAction, AutomationRule
 from apps.communications.models import Announcement
 from apps.companies.models import Company
 from apps.courses.models import Course
-from apps.courses.quiz_models import Certificate
 from apps.documents.models import Document, DocumentVersion
 from apps.events.models import Event
 from apps.notifications.models import Notification
@@ -118,10 +117,6 @@ def recursos_de_b(db, empresa_b, rh_b, colab_b):
         company=empresa_b, name="Template da B"
     )
 
-    certificado = Certificate.objects.create(
-        user=colab_b, course=curso, company=empresa_b, score=100
-    )
-
     regra = AutomationRule.objects.create(
         company=empresa_b, name="Automação da B",
         trigger_event=catalog.EMPLOYEE_CREATED,
@@ -139,7 +134,7 @@ def recursos_de_b(db, empresa_b, rh_b, colab_b):
         "setor": setor, "unidade": unidade, "solicitacao": solicitacao,
         "documento": documento, "versao": versao, "comunicado": comunicado,
         "evento": evento, "curso": curso, "tarefa": tarefa,
-        "template": template, "certificado": certificado, "regra": regra,
+        "template": template, "regra": regra,
         "notificacao": notificacao, "colab": colab_b,
     }
 
@@ -175,13 +170,6 @@ class TestIsolamentoPorId:
         api_client.force_authenticate(user=admin_a)
         resp = api_client.get(rota.format(recursos_de_b[chave].pk))
         assert resp.status_code == 404, f"{rota} vazou: {resp.status_code}"
-
-    def test_certificado_de_b_nao_e_alcancavel(
-        self, api_client, admin_a, recursos_de_b
-    ):
-        api_client.force_authenticate(user=admin_a)
-        codigo = recursos_de_b["certificado"].code
-        assert api_client.get(f"/api/v1/certificates/{codigo}/").status_code == 404
 
     def test_automacao_de_b_nao_e_alcancavel(
         self, api_client, admin_a, recursos_de_b
@@ -226,7 +214,6 @@ class TestListagensNaoVazam:
             "/api/v1/onboarding/tasks/",
             "/api/v1/onboarding/templates/",
             "/api/v1/units/",
-            "/api/v1/certificates/",
         ],
     )
     def test_listagem_de_a_nao_traz_nada_de_b(
@@ -465,7 +452,6 @@ class TestMatrizDeAutorizacao:
             "/api/v1/requests/",
             "/api/v1/employees/",
             "/api/v1/onboarding/tasks/",
-            "/api/v1/certificates/",
         ]:
             resp = api_client.get(rota)
             vazio = resp.status_code in {403, 404} or resp.data.get("count") == 0

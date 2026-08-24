@@ -15,7 +15,7 @@ from django.utils import timezone
 
 from apps.communications.models import Announcement
 from apps.courses.models import Course, CourseProgress
-from apps.courses.quiz_models import Certificate, QuizAttempt
+from apps.courses.quiz_models import QuizAttempt
 from apps.documents.models import Document, DocumentAcceptance
 from apps.onboarding.models import OnboardingTask
 from apps.requests.models import HRRequest
@@ -111,7 +111,6 @@ def _metricas_treinamentos(company) -> dict:
         "quiz_passed": tentativas["aprovadas"],
         "quiz_failed": tentativas["reprovadas"],
         "pass_rate": _percent(tentativas["aprovadas"], tentativas["total"]),
-        "certificates": Certificate.objects.filter(company=company).count(),
     }
 
 

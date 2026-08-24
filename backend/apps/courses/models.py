@@ -153,12 +153,11 @@ class CourseProgress(models.Model):
         return f"{self.user} → {self.course} [{self.get_status_display()}]"
 
 
-# Avaliação e certificados vivem em quiz_models.py para não inchar este
+# A avaliação vive em quiz_models.py para não inchar este
 # arquivo — reexportados aqui porque o Django só registra o que passa por
 # models.py.
 from .quiz_models import (  # noqa: E402,F401
     AttemptAnswer,
-    Certificate,
     Option,
     Question,
     Quiz,

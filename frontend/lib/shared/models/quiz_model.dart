@@ -1,4 +1,4 @@
-// Avaliação de treinamento e certificados.
+// Avaliação de treinamento.
 //
 // Repare no que NÃO existe aqui: `isCorrect` nas alternativas. O gabarito
 // não sai do servidor para quem vai responder, e o app não tem onde
@@ -120,7 +120,6 @@ class QuizAttempt {
   final bool passed;
   final int passingScore;
   final int? attemptsLeft;
-  final String? certificateCode;
   final String courseTitle;
   final List<AnswerResult> answers;
 
@@ -133,7 +132,6 @@ class QuizAttempt {
     required this.passed,
     required this.passingScore,
     this.attemptsLeft,
-    this.certificateCode,
     this.courseTitle = '',
     this.answers = const [],
   });
@@ -148,43 +146,10 @@ class QuizAttempt {
       passed: json['passed'] ?? false,
       passingScore: json['passing_score'] ?? 70,
       attemptsLeft: json['attempts_left'],
-      certificateCode: json['certificate_code'],
       courseTitle: json['course_title'] ?? '',
       answers: (json['answers'] as List<dynamic>? ?? const [])
           .map((e) => AnswerResult.fromJson(e as Map<String, dynamic>))
           .toList(),
-    );
-  }
-}
-
-class CertificateModel {
-  final int id;
-  final String code;
-  final String userName;
-  final String courseTitle;
-  final String companyName;
-  final int score;
-  final String issuedAt;
-
-  const CertificateModel({
-    required this.id,
-    required this.code,
-    required this.userName,
-    required this.courseTitle,
-    required this.companyName,
-    required this.score,
-    required this.issuedAt,
-  });
-
-  factory CertificateModel.fromJson(Map<String, dynamic> json) {
-    return CertificateModel(
-      id: json['id'] ?? 0,
-      code: json['code'] ?? '',
-      userName: json['user_name'] ?? '',
-      courseTitle: json['course_title'] ?? '',
-      companyName: json['company_name'] ?? '',
-      score: json['score'] ?? 0,
-      issuedAt: json['issued_at'] ?? '',
     );
   }
 }

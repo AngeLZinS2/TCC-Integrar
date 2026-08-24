@@ -17,7 +17,7 @@ from apps.audit.models import AuditLog
 from apps.notifications.channels import Category, notify
 
 from .models import CourseProgress
-from .quiz_models import AttemptAnswer, Certificate, Question, QuizAttempt
+from .quiz_models import AttemptAnswer, Question, QuizAttempt
 
 logger = logging.getLogger(__name__)
 
@@ -148,7 +148,7 @@ def enviar_respostas(attempt: QuizAttempt, respostas: dict) -> QuizAttempt:
 
 
 def _concluir_treinamento(attempt: QuizAttempt) -> None:
-    """Aprovação fecha o curso e emite o certificado."""
+    """Aprovação fecha o curso."""
     curso = attempt.quiz.course
     progresso, _ = CourseProgress.objects.get_or_create(
         user=attempt.user, course=curso
@@ -158,19 +158,17 @@ def _concluir_treinamento(attempt: QuizAttempt) -> None:
         progresso.completed_at = timezone.now()
         # Marca para o signal de CourseProgress não mandar também o
         # "Treinamento concluído" genérico: o aviso de aprovação abaixo já
-        # cobre o mesmo fato, com nota e certificado.
+        # cobre o mesmo fato, e com a nota.
         progresso.concluido_por_avaliacao = True
         progresso.save(update_fields=["status", "completed_at"])
-
-    certificado = emitir_certificado(attempt)
 
     notify(
         attempt.user,
         f"Aprovado em {curso.title}",
-        f"Nota {attempt.score}%. Seu certificado {certificado.code} já está disponível.",
+        f"Você foi aprovado com nota {attempt.score}%.",
         category=Category.TRAINING,
         email=True,
-        link=f"/certificates/{certificado.code}",
+        link=f"/courses/{curso.id}",
     )
 
 
@@ -190,32 +188,6 @@ def _avisar_reprovacao(attempt: QuizAttempt) -> None:
         category=Category.TRAINING,
         link=f"/courses/{attempt.quiz.course_id}",
     )
-
-
-def emitir_certificado(attempt: QuizAttempt) -> Certificate:
-    """
-    Emite o certificado, ou devolve o que já existe.
-
-    Idempotente (Módulo 32): reprocessar a aprovação — por retry de task ou
-    duplo clique — não pode gerar um segundo documento para a mesma pessoa
-    e treinamento.
-    """
-    certificado, criado = Certificate.objects.get_or_create(
-        user=attempt.user,
-        course=attempt.quiz.course,
-        defaults={
-            "company": attempt.quiz.course.company,
-            "attempt": attempt,
-            "score": attempt.score,
-        },
-    )
-    if criado:
-        audit.record(
-            attempt.user, AuditLog.Action.CREATE, "certificate",
-            resource_id=certificado.pk, resource_label=certificado.code,
-            metadata={"course": attempt.quiz.course.title, "score": attempt.score},
-        )
-    return certificado
 
 
 def exige_avaliacao(curso) -> bool:

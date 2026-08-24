@@ -5,15 +5,11 @@ Antes da P2 a conclusão era auto-declarada: o colaborador apertava
 "concluí" e o sistema acreditava. Para treinamento de compliance — LGPD,
 segurança, código de conduta — isso não sustenta comprovação nenhuma.
 
-Aqui o treinamento com quiz só fecha quando a pessoa é aprovada, e a
-aprovação gera um certificado com código verificável.
+Aqui o treinamento com quiz só fecha quando a pessoa é aprovada.
 """
-
-import uuid
 
 from django.conf import settings
 from django.db import models
-from django.utils import timezone
 
 
 class Quiz(models.Model):
@@ -165,60 +161,3 @@ class AttemptAnswer(models.Model):
 
     class Meta:
         unique_together = ("attempt", "question")
-
-
-class Certificate(models.Model):
-    """
-    Comprovante de conclusão, emitido na aprovação.
-
-    O código é o que torna o certificado verificável por quem não tem
-    acesso ao sistema — um RH de outra empresa, por exemplo. Por isso a
-    rota de validação é pública, e devolve o mínimo: nome, treinamento,
-    data. Nunca e-mail, cargo ou qualquer outro dado da pessoa.
-    """
-
-    code = models.CharField(max_length=30, unique=True, editable=False, db_index=True)
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="certificates"
-    )
-    course = models.ForeignKey(
-        "courses.Course", on_delete=models.CASCADE, related_name="certificates"
-    )
-    company = models.ForeignKey(
-        "companies.Company", on_delete=models.CASCADE, related_name="certificates"
-    )
-    attempt = models.ForeignKey(
-        QuizAttempt, on_delete=models.SET_NULL, null=True, blank=True,
-        related_name="certificate",
-    )
-    score = models.PositiveIntegerField(default=0)
-    issued_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        # Um certificado por pessoa e treinamento: refazer a avaliação não
-        # emite outro documento.
-        unique_together = ("user", "course")
-        ordering = ["-issued_at"]
-        verbose_name = "Certificado"
-        verbose_name_plural = "Certificados"
-
-    def __str__(self):
-        return f"{self.code} — {self.user.full_name}"
-
-    def save(self, *args, **kwargs):
-        if not self.code:
-            self.code = self._gerar_codigo()
-        super().save(*args, **kwargs)
-
-    @staticmethod
-    def _gerar_codigo() -> str:
-        """
-        CERT-2026-A1B2C3D4.
-
-        Aleatório, e não sequencial: o código circula fora do sistema e é
-        consultado numa rota pública. Sequencial permitiria varrer os
-        certificados de todo mundo somando 1, e ainda revelaria quantos a
-        plataforma emitiu.
-        """
-        ano = timezone.localdate().year
-        return f"CERT-{ano}-{uuid.uuid4().hex[:8].upper()}"

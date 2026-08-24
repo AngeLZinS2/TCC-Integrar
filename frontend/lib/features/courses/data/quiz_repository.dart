@@ -70,19 +70,6 @@ class QuizRepository {
     );
   }
 
-  Future<PaginatedResponse<CertificateModel>> getCertificates({
-    int page = 1,
-  }) async {
-    final response = await httpClient.dio.get(
-      ApiConstants.certificates,
-      queryParameters: {'page': page},
-    );
-    return PaginatedResponse.fromJson(
-      response.data,
-      (json) => CertificateModel.fromJson(json),
-    );
-  }
-
   String _mensagem(DioException e, String padrao) {
     final data = e.response?.data;
     if (data is Map<String, dynamic>) {

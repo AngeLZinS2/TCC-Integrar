@@ -110,13 +110,11 @@ class ApiConstants {
   static String automationRuleRuns(int id) => '/automations/rules/$id/runs/';
   static const String automationCatalog = '/automations/catalog/';
 
-  // Avaliação e certificados
+  // Avaliação
   static String courseQuiz(int courseId) => '/courses/$courseId/quiz/';
   static String courseQuizQuestions(int courseId) => '/courses/$courseId/quiz/questions/';
   static String quizAttempts(int courseId) => '/courses/$courseId/quiz/attempts/';
   static String quizSubmit(int courseId, int attemptId) =>
       '/courses/$courseId/quiz/attempts/$attemptId/submit/';
   static const String myQuizAttempts = '/courses/my-attempts/';
-  static const String certificates = '/certificates/';
-  static String certificateValidate(String code) => '/certificates/validate/$code/';
 }

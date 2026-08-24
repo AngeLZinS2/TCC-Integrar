@@ -299,11 +299,11 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
             ),
           ),
 
-          if (aprovado && resultado.certificateCode != null) ...[
+          if (aprovado) ...[
             const SizedBox(height: AppSpacing.lg),
             _aviso(
-              Icons.workspace_premium_outlined,
-              'Certificado ${resultado.certificateCode} emitido.',
+              Icons.check_circle_outline,
+              'Treinamento concluído.',
               AppColors.success,
             ),
           ],
@@ -455,7 +455,6 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
         _emAndamento = null;
       });
       ref.invalidate(courseQuizProvider(widget.courseId));
-      ref.invalidate(certificatesProvider);
     } catch (erro) {
       setState(() => _erro = erro.toString().replaceFirst('Exception: ', ''));
     } finally {

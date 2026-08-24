@@ -209,12 +209,6 @@ class AppSidebar extends ConsumerWidget {
                         onTap: () => context.go('/onboarding/tasks'),
                       ),
                       _SidebarItem(
-                        icon: Icons.workspace_premium_outlined,
-                        label: 'Certificados',
-                        isSelected: currentRoute.startsWith('/certificates'),
-                        onTap: () => context.go('/certificates'),
-                      ),
-                      _SidebarItem(
                         icon: Icons.campaign_outlined,
                         label: 'Comunicados',
                         isSelected: currentRoute.startsWith('/communications'),

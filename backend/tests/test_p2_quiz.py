@@ -1,5 +1,5 @@
 """
-Avaliação de treinamento: quiz, nota mínima, tentativas e certificados.
+Avaliação de treinamento: quiz, nota mínima e tentativas.
 
 A preocupação central destes testes é o **gabarito**: ele não pode sair do
 servidor por nenhum caminho, porque quem o vê acerta tudo na tentativa
@@ -10,11 +10,10 @@ import pytest
 
 from apps.companies.models import Company
 from apps.courses.models import Course, CourseProgress
-from apps.courses.quiz_models import Certificate, Option, Question, Quiz, QuizAttempt
+from apps.courses.quiz_models import Option, Question, Quiz, QuizAttempt
 from apps.notifications.models import Notification
 
 COURSES = "/api/v1/courses/"
-CERTS = "/api/v1/certificates/"
 
 
 def mk(model, email, role, company, **kw):
@@ -362,15 +361,17 @@ class TestConclusao:
 
     def test_aprovado_e_notificado(self, api_client, colab, curso, quiz):
         responder(api_client, colab, curso, quiz, corretas(quiz))
-        assert Notification.objects.filter(
+        aviso = Notification.objects.filter(
             user=colab, title__startswith="Aprovado em"
-        ).exists()
+        ).first()
+        assert aviso is not None
+        assert "100%" in aviso.message
 
     def test_aprovacao_nao_gera_aviso_duplicado(self, api_client, colab, curso, quiz):
         """
         O signal de CourseProgress também avisa conclusão. Sem a supressão,
         a pessoa recebia dois avisos do mesmo fato — e o genérico é o que
-        não diz a nota nem o código do certificado.
+        não diz a nota.
         """
         responder(api_client, colab, curso, quiz, corretas(quiz))
 
@@ -404,124 +405,6 @@ class TestConclusao:
 # ══════════════════════════════════════════════════════════════════════════
 # Certificados
 # ══════════════════════════════════════════════════════════════════════════
-
-@pytest.mark.django_db
-class TestCertificados:
-    def test_aprovacao_emite_certificado(self, api_client, colab, curso, quiz):
-        resp = responder(api_client, colab, curso, quiz, corretas(quiz))
-
-        certificado = Certificate.objects.get(user=colab, course=curso)
-        assert certificado.code.startswith("CERT-")
-        assert certificado.score == 100
-        assert resp.data["certificate_code"] == certificado.code
-
-    def test_reprovacao_nao_emite(self, api_client, colab, curso, quiz):
-        responder(api_client, colab, curso, quiz, erradas(quiz))
-        assert not Certificate.objects.filter(user=colab).exists()
-
-    def test_emissao_e_idempotente(self, colab, curso, quiz):
-        """Retry de task ou duplo clique não pode gerar dois documentos."""
-        from apps.courses import quiz_services
-
-        tentativa = quiz_services.iniciar_tentativa(quiz, colab)
-        quiz_services.enviar_respostas(
-            tentativa, {p.id: list(p.correct_option_ids) for p in quiz.questions.all()}
-        )
-        primeiro = quiz_services.emitir_certificado(tentativa)
-        segundo = quiz_services.emitir_certificado(tentativa)
-
-        assert primeiro.pk == segundo.pk
-        assert Certificate.objects.filter(user=colab, course=curso).count() == 1
-
-    def test_colaborador_ve_os_proprios_certificados(
-        self, api_client, django_user_model, company, colab, curso, quiz
-    ):
-        outro = mk(django_user_model, "outro-cert@x.com", "colaborador", company)
-        responder(api_client, colab, curso, quiz, corretas(quiz))
-        responder(api_client, outro, curso, quiz, corretas(quiz))
-
-        api_client.force_authenticate(user=colab)
-        assert api_client.get(CERTS).data["count"] == 1
-
-    def test_rh_ve_os_certificados_da_empresa(
-        self, api_client, django_user_model, company, colab, rh, curso, quiz
-    ):
-        outro = mk(django_user_model, "outro-cert2@x.com", "colaborador", company)
-        responder(api_client, colab, curso, quiz, corretas(quiz))
-        responder(api_client, outro, curso, quiz, corretas(quiz))
-
-        api_client.force_authenticate(user=rh)
-        assert api_client.get(CERTS).data["count"] == 2
-
-    def test_nao_ve_certificado_de_outra_empresa(
-        self, api_client, colab, rh_b, curso, quiz
-    ):
-        responder(api_client, colab, curso, quiz, corretas(quiz))
-        api_client.force_authenticate(user=rh_b)
-        assert api_client.get(CERTS).data["count"] == 0
-
-    def test_certificado_nao_e_editavel(self, api_client, colab, curso, quiz):
-        responder(api_client, colab, curso, quiz, corretas(quiz))
-        codigo = Certificate.objects.get(user=colab).code
-
-        api_client.force_authenticate(user=colab)
-        assert api_client.patch(f"{CERTS}{codigo}/", {"score": 100}, format="json").status_code == 405
-        assert api_client.delete(f"{CERTS}{codigo}/").status_code == 405
-
-
-@pytest.mark.django_db
-class TestValidacaoPublica:
-    URL = "/api/v1/certificates/validate/"
-
-    def test_valida_sem_autenticacao(self, api_client, colab, curso, quiz):
-        """Serve para ser conferido por quem está fora do sistema."""
-        responder(api_client, colab, curso, quiz, corretas(quiz))
-        codigo = Certificate.objects.get(user=colab).code
-
-        api_client.force_authenticate(user=None)
-        resp = api_client.get(f"{self.URL}{codigo}/")
-        assert resp.status_code == 200
-        assert resp.data["valid"] is True
-        assert resp.data["certificate"]["user_name"] == colab.full_name
-
-    def test_codigo_inexistente_e_invalido(self, api_client):
-        api_client.force_authenticate(user=None)
-        resp = api_client.get(f"{self.URL}CERT-2026-XXXXXXXX/")
-        assert resp.status_code == 404
-        assert resp.data["valid"] is False
-
-    def test_validacao_publica_nao_expone_dados_pessoais(
-        self, api_client, colab, curso, quiz
-    ):
-        """
-        Quem tem o código não pode extrair a ficha da pessoa a partir dele.
-        """
-        responder(api_client, colab, curso, quiz, corretas(quiz))
-        codigo = Certificate.objects.get(user=colab).code
-
-        api_client.force_authenticate(user=None)
-        corpo = str(api_client.get(f"{self.URL}{codigo}/").data)
-
-        assert colab.email not in corpo
-        assert "score" not in corpo
-        assert "sector" not in corpo
-
-    def test_codigo_e_aleatorio_e_nao_sequencial(
-        self, api_client, django_user_model, company, colab, curso, quiz
-    ):
-        """
-        Sequencial permitiria varrer os certificados de todo mundo somando 1
-        na rota pública.
-        """
-        outro = mk(django_user_model, "seq@x.com", "colaborador", company)
-        responder(api_client, colab, curso, quiz, corretas(quiz))
-        responder(api_client, outro, curso, quiz, corretas(quiz))
-
-        codigos = sorted(Certificate.objects.values_list("code", flat=True))
-        sufixos = [c.rsplit("-", 1)[1] for c in codigos]
-        assert sufixos[0] != sufixos[1]
-        assert not all(s.isdigit() for s in sufixos)
-
 
 # ══════════════════════════════════════════════════════════════════════════
 # Administração da avaliação

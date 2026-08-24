@@ -131,7 +131,7 @@ class CourseViewSet(viewsets.ModelViewSet):
             # Treinamento com avaliação não fecha por autodeclaração: quem
             # marca como concluído é a aprovação no quiz. Sem isto, bastaria
             # um PATCH para "concluir" um treinamento de compliance sem
-            # responder nada — e o certificado perderia qualquer valor.
+            # responder nada, e a conclusão não comprovaria coisa alguma.
             if new_status == "completed" and quiz_services.exige_avaliacao(course):
                 aprovado = course.quiz.attempts.filter(
                     user=request.user, passed=True

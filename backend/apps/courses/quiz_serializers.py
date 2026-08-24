@@ -16,7 +16,6 @@ from rest_framework import serializers
 
 from .quiz_models import (
     AttemptAnswer,
-    Certificate,
     Option,
     Question,
     Quiz,
@@ -193,27 +192,18 @@ class QuizAttemptSerializer(serializers.ModelSerializer):
     course_title = serializers.CharField(source="quiz.course.title", read_only=True)
     passing_score = serializers.IntegerField(source="quiz.passing_score", read_only=True)
     attempts_left = serializers.SerializerMethodField()
-    certificate_code = serializers.SerializerMethodField()
 
     class Meta:
         model = QuizAttempt
         fields = [
             "id", "attempt_number", "score", "correct_count", "question_count",
             "passed", "started_at", "finished_at",
-            "course_title", "passing_score", "attempts_left", "certificate_code",
+            "course_title", "passing_score", "attempts_left",
         ]
         read_only_fields = fields
 
     def get_attempts_left(self, obj) -> int | None:
         return obj.quiz.attempts_left_for(obj.user)
-
-    def get_certificate_code(self, obj) -> str | None:
-        if not obj.passed:
-            return None
-        certificado = Certificate.objects.filter(
-            user=obj.user, course=obj.quiz.course
-        ).first()
-        return certificado.code if certificado else None
 
 
 class QuizAttemptResultSerializer(QuizAttemptSerializer):
@@ -221,40 +211,4 @@ class QuizAttemptResultSerializer(QuizAttemptSerializer):
 
     class Meta(QuizAttemptSerializer.Meta):
         fields = QuizAttemptSerializer.Meta.fields + ["answers"]
-        read_only_fields = fields
-
-
-# ── Certificados ────────────────────────────────────────────────────────────
-
-class CertificateSerializer(serializers.ModelSerializer):
-    user_name = serializers.CharField(source="user.full_name", read_only=True)
-    course_title = serializers.CharField(source="course.title", read_only=True)
-    company_name = serializers.CharField(source="company.name", read_only=True)
-
-    class Meta:
-        model = Certificate
-        fields = [
-            "id", "code", "user_name", "course_title", "company_name",
-            "score", "issued_at",
-        ]
-        read_only_fields = fields
-
-
-class PublicCertificateSerializer(serializers.ModelSerializer):
-    """
-    Validação pública pelo código.
-
-    Devolve o mínimo para confirmar que o certificado é verdadeiro: quem,
-    qual treinamento, qual empresa, quando. Nada de e-mail, cargo, setor ou
-    id interno — a rota é aberta, e quem tem o código não deveria conseguir
-    extrair a ficha da pessoa a partir dele.
-    """
-
-    user_name = serializers.CharField(source="user.full_name", read_only=True)
-    course_title = serializers.CharField(source="course.title", read_only=True)
-    company_name = serializers.CharField(source="company.name", read_only=True)
-
-    class Meta:
-        model = Certificate
-        fields = ["code", "user_name", "course_title", "company_name", "issued_at"]
         read_only_fields = fields

@@ -60,8 +60,8 @@ def notify_course_completed(sender, instance, **kwargs):
     course = instance.course
 
     # Quando a conclusão veio da aprovação na avaliação, quem avisa é o
-    # quiz — com nota e código do certificado. Repetir aqui daria duas
-    # notificações para o mesmo fato, e a genérica é a menos informativa.
+    # quiz — com a nota. Repetir aqui daria duas notificações para o mesmo
+    # fato, e a genérica é a menos informativa.
     if not getattr(instance, "concluido_por_avaliacao", False):
         services.notify(
             user,

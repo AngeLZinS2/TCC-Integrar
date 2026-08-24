@@ -286,8 +286,8 @@ class _HeroTexto extends StatelessWidget {
           delay: Duration(milliseconds: 300),
           child: Text(
             'A plataforma que organiza a integração de novos colaboradores: '
-            'tarefas com responsável e prazo, treinamentos com avaliação e '
-            'certificado, documentos com aceite formal e comunicação '
+            'tarefas com responsável e prazo, treinamentos por setor com '
+            'avaliação, documentos com aceite formal e comunicação '
             'direcionada — tudo num lugar só.',
             style: TextStyle(
               fontSize: 17,
@@ -471,7 +471,7 @@ class _Modulos extends StatelessWidget {
     (
       Icons.school_rounded,
       'Treinamentos com avaliação',
-      'Trilhas por setor e cargo, com quiz e nota mínima. Treinamento de compliance só fecha com aprovação — e gera certificado com código verificável.',
+      'Trilhas por setor e cargo, com quiz e nota mínima. Treinamento que exige avaliação só fecha com aprovação — nunca por autodeclaração.',
     ),
     (
       Icons.folder_shared_outlined,
@@ -707,7 +707,7 @@ class _ParaCadaPapel extends StatelessWidget {
       'Colaborador',
       [
         'Vê o que precisa fazer, e só isso',
-        'Treinamentos, documentos e certificados',
+        'Treinamentos do seu setor e documentos da empresa',
         'Abre solicitações e acompanha o andamento',
       ],
     ),
