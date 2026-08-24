@@ -102,6 +102,61 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    testWidgets('o conteúdo do hero aparece por completo depois da entrada',
+        (tester) async {
+      await _montar(tester);
+
+      // `pumpAndSettle` já esperou toda a animação escalonada. Se algum
+      // bloco ficasse preso em opacidade 0, ele sumiria da página.
+      expect(find.text('Do primeiro dia ao primeiro resultado.'), findsOneWidget);
+      expect(find.text('80% concluído'), findsOneWidget);
+      expect(find.text('3 tarefas pendentes'), findsOneWidget);
+      expect(find.text('1 documento aguardando aceite'), findsOneWidget);
+    });
+
+    testWidgets('com movimento reduzido a página aparece pronta, sem animar',
+        (tester) async {
+      // Quem pediu movimento reduzido ao sistema não pode depender de uma
+      // animação para ver o conteúdo — nem esperar por ela.
+      tester.view.physicalSize = const Size(1440, 1200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(disableAnimations: true),
+          child: MaterialApp.router(
+            theme: AppTheme.lightTheme,
+            routerConfig: _router(),
+          ),
+        ),
+      );
+      // Um único frame, sem settle: o conteúdo já tem que estar visível.
+      await tester.pump();
+
+      final opacidades = tester
+          .widgetList<Opacity>(find.byType(Opacity))
+          .where((o) => o.opacity < 1);
+      expect(opacidades, isEmpty,
+          reason: 'nada pode estar meio transparente com movimento reduzido');
+      expect(find.text('Do primeiro dia ao primeiro resultado.'), findsOneWidget);
+    });
+
+    testWidgets('as seções de baixo aparecem ao rolar', (tester) async {
+      await _montar(tester);
+
+      await tester.dragUntilVisible(
+        find.text('Sua empresa já usa o Onboarding Corp?'),
+        find.byType(SingleChildScrollView),
+        const Offset(0, -400),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Sua empresa já usa o Onboarding Corp?'), findsOneWidget);
+      expect(find.text('Como funciona'), findsOneWidget);
+    });
+
     testWidgets('funciona no tema escuro', (tester) async {
       tester.view.physicalSize = const Size(1440, 1200);
       tester.view.devicePixelRatio = 1.0;
