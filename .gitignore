@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+mediafiles/
+staticfiles/
+
+# Secrets — NUNCA commitar o .env real
+backend/.env
+.env
+
+# pytest / coverage
+.pytest_cache/
+htmlcov/
+.coverage
+*.cover
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Flutter / Dart
+frontend/.dart_tool/
+frontend/.flutter-plugins
+frontend/.flutter-plugins-dependencies
+frontend/.packages
+frontend/pubspec.lock
+frontend/build/
+frontend/.fvm/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,0 +1,8 @@
+from django.apps import AppConfig
+
+
+class SectorsConfig(AppConfig):
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "apps.sectors"
+    label = "sectors"
+    verbose_name = "Setores"
