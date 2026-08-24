@@ -95,10 +95,14 @@ class _Cabecalho extends StatelessWidget {
       ),
       // Sem `ConstrainedBox`: aqui a barra ocupa a largura inteira, para a
       // marca encostar na esquerda e o "Entrar" na direita.
+      //
+      // `spaceBetween` e nao `Spacer`: com um `Flexible` na marca, o
+      // `Spacer` fica com METADE do espaco livre e o resto sobra no fim da
+      // linha — o botao parava no meio da barra em telas largas.
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           const Flexible(child: EntradaEscalonada(child: _Marca())),
-          const Spacer(),
           EntradaEscalonada(
             delay: const Duration(milliseconds: 90),
             child: BotaoAcesso(

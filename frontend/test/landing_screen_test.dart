@@ -51,6 +51,34 @@ void main() {
       expect(find.text('Do primeiro dia ao primeiro resultado.'), findsOneWidget);
     });
 
+    testWidgets('o botão de acesso fica encostado na borda direita',
+        (tester) async {
+      // Mede a POSIÇÃO, não a existência. Foi assim que passou despercebido
+      // que o botão parava no meio da barra: ele estava lá, clicável e
+      // levando ao login — só que no lugar errado.
+      const largura = 1900.0;
+      await _montar(tester, tamanho: const Size(largura, 1000));
+
+      final botao = find.ancestor(
+        of: find.text('Entrar'),
+        matching: find.byType(GestureDetector),
+      );
+      final caixa = tester.getRect(botao.first);
+
+      // O recuo lateral da página é 48 em telas largas; a folga aceita
+      // cobre a sombra e o arredondamento do pill.
+      expect(
+        largura - caixa.right,
+        lessThan(60),
+        reason: 'o botão está a ${largura - caixa.right}px da borda direita',
+      );
+
+      // E a marca, encostada na esquerda. `.first` porque "Onboarding Corp"
+      // aparece também no rodapé.
+      final marca = tester.getRect(find.text('Onboarding Corp').first);
+      expect(marca.left, lessThan(120));
+    });
+
     testWidgets('o botão do canto superior direito leva ao login',
         (tester) async {
       await _montar(tester);
