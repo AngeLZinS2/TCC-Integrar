@@ -22,12 +22,15 @@ db.sqlite3-journal
 mediafiles/
 staticfiles/
 
-# Scripts de QA descartaveis, criados durante verificacao ao vivo.
-# Nunca sao parte do sistema, e alguns criam usuario com senha fixa.
-backend/qa_*.py
-backend/seed_*.py
-backend/cleanup_*.py
-backend/listar_*.py
+# Scripts descartaveis de verificacao ao vivo. Nunca sao parte do sistema,
+# e alguns criam usuario com senha fixa.
+#
+# A regra e por EXCLUSAO: os unicos .py na raiz de backend/ que pertencem ao
+# repositorio sao manage.py e conftest.py. Listar nome por nome ja falhou
+# duas vezes — sempre aparece um script com prefixo novo.
+backend/*.py
+!backend/manage.py
+!backend/conftest.py
 
 # Secrets — NUNCA commitar o .env real
 backend/.env
