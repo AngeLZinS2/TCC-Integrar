@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../features/auth/presentation/forgot_password_screen.dart';
 import '../features/auth/presentation/login_screen.dart';
+import '../features/landing/presentation/landing_screen.dart';
 import '../features/auth/presentation/reset_password_screen.dart';
 import '../features/auth/providers/auth_provider.dart';
 import '../features/audit/presentation/audit_screen.dart';
@@ -50,15 +51,18 @@ final _shellNavigatorKey = GlobalKey<NavigatorState>();
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: '/login',
+    initialLocation: '/',
     refreshListenable: _RouterAuthNotifier(ref),
     redirect: (BuildContext context, GoRouterState state) {
       final authState = ref.read(authNotifierProvider);
       final isLoggingIn = state.matchedLocation == '/login';
+      final isLanding = state.matchedLocation == '/';
 
-      // Rotas abertas: quem esqueceu a senha não consegue autenticar para
-      // chegar até elas, e o link do e-mail é aberto sem sessão nenhuma.
+      // Rotas abertas: a landing apresenta o sistema para quem ainda não
+      // tem conta; quem esqueceu a senha não consegue autenticar para
+      // chegar até as demais, e o link do e-mail é aberto sem sessão.
       final isPublicAuthRoute = isLoggingIn ||
+          isLanding ||
           state.matchedLocation == '/forgot-password' ||
           state.matchedLocation == '/reset-password';
 
@@ -73,7 +77,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/login';
       }
 
-      if (isAuthenticated && isLoggingIn) {
+      // Quem já tem sessão não fica na vitrine nem na tela de login —
+      // vai direto para o painel do seu papel.
+      if (isAuthenticated && (isLoggingIn || isLanding)) {
         return isOwner ? '/owner/dashboard' : '/onboarding';
       }
 
@@ -105,6 +111,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       // Dono não tem trilha pessoal — mantém fora das rotas de colaborador.
+      // `isLanding` nao entra aqui: o retorno antecipado acima ja tratou
+      // quem esta autenticado na vitrine.
       final isCollaboratorPath = !isRhPath &&
           !isOrgPath &&
           !isAuditPath &&
@@ -119,6 +127,13 @@ final routerProvider = Provider<GoRouter>((ref) {
     },
     routes: [
       // ── Public Auth Routes ─────────────────────────────────────────
+      // Vitrine pública. Fica na raiz porque é o endereço que alguém
+      // digita sem saber nada do sistema.
+      GoRoute(
+        path: '/',
+        name: 'landing',
+        builder: (context, state) => const LandingScreen(),
+      ),
       GoRoute(
         path: '/login',
         name: 'login',
