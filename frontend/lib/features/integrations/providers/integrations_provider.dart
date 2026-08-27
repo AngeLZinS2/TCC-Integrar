@@ -32,3 +32,13 @@ final amostraProvider =
     FutureProvider.autoDispose.family<AmostraDaTabela, String>((ref, tabela) {
   return ref.watch(integrationsRepositoryProvider).getAmostra(tabela);
 });
+
+final camposDisponiveisProvider =
+    FutureProvider<List<EntidadeMapeavel>>((ref) {
+  return ref.watch(integrationsRepositoryProvider).getCamposDisponiveis();
+});
+
+final mapeamentosProvider =
+    FutureProvider.autoDispose<List<Mapeamento>>((ref) {
+  return ref.watch(integrationsRepositoryProvider).getMapeamentos();
+});

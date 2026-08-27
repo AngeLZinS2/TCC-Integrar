@@ -168,3 +168,80 @@ class AmostraDaTabela {
     );
   }
 }
+
+/// Um campo que o sistema precisa saber.
+///
+/// O catálogo vem do servidor — a tela não mantém cópia, porque uma cópia
+/// desatualizada pediria um campo que o servidor já não usa.
+class CampoInterno {
+  final String chave;
+  final String rotulo;
+  final String ajuda;
+  final bool obrigatorio;
+
+  const CampoInterno({
+    required this.chave,
+    required this.rotulo,
+    required this.ajuda,
+    required this.obrigatorio,
+  });
+
+  factory CampoInterno.fromJson(Map<String, dynamic> json) => CampoInterno(
+        chave: json['chave'] ?? '',
+        rotulo: json['rotulo'] ?? '',
+        ajuda: json['ajuda'] ?? '',
+        obrigatorio: json['obrigatorio'] ?? false,
+      );
+}
+
+class EntidadeMapeavel {
+  final String chave;
+  final String rotulo;
+  final List<CampoInterno> campos;
+
+  const EntidadeMapeavel({
+    required this.chave,
+    required this.rotulo,
+    required this.campos,
+  });
+
+  List<CampoInterno> get obrigatorios =>
+      campos.where((c) => c.obrigatorio).toList();
+  List<CampoInterno> get opcionais =>
+      campos.where((c) => !c.obrigatorio).toList();
+
+  factory EntidadeMapeavel.fromJson(Map<String, dynamic> json) =>
+      EntidadeMapeavel(
+        chave: json['chave'] ?? '',
+        rotulo: json['rotulo'] ?? '',
+        campos: (json['campos'] as List<dynamic>? ?? const [])
+            .map((e) => CampoInterno.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
+}
+
+/// O que já foi apontado para uma entidade.
+class Mapeamento {
+  final String entidade;
+  final String rotulo;
+  final String tabela;
+  final Map<String, String> campos;
+  final bool configurado;
+
+  const Mapeamento({
+    required this.entidade,
+    required this.rotulo,
+    required this.tabela,
+    required this.campos,
+    required this.configurado,
+  });
+
+  factory Mapeamento.fromJson(Map<String, dynamic> json) => Mapeamento(
+        entidade: json['entidade'] ?? '',
+        rotulo: json['rotulo'] ?? '',
+        tabela: json['tabela'] ?? '',
+        campos: (json['campos'] as Map<String, dynamic>? ?? const {})
+            .map((k, v) => MapEntry(k, v?.toString() ?? '')),
+        configurado: json['configurado'] ?? false,
+      );
+}

@@ -22,10 +22,11 @@ from apps.audit import services as audit
 from apps.audit.models import AuditLog
 from apps.users import rbac
 
+from . import catalog
 from .connectors import BANCOS_SUPORTADOS, FalhaDeConexao
 from .crypto import CredencialIlegivel
 from .guard import ConsultaBloqueada
-from .models import ExternalConnection
+from .models import ExternalConnection, IntegrationMapping
 from .serializers import (
     ColunaSerializer,
     ExternalConnectionSerializer,
@@ -333,3 +334,168 @@ class DiscoveryView(_BaseIntegracao):
             return Response(
                 {"detail": "Não foi possível ler a estrutura do banco."}, status=400
             )
+
+
+class CamposDisponiveisView(_BaseIntegracao):
+    """
+    GET /api/v1/integrations/fields/
+
+    O que o sistema precisa saber de cada entidade, com rótulo, explicação
+    e se é obrigatório. Vem da API para a tela não manter uma cópia — uma
+    cópia desatualizada pediria um campo que o servidor já não usa.
+    """
+
+    def get(self, request):
+        return Response(
+            {
+                "entidades": [
+                    {
+                        "chave": entidade,
+                        "rotulo": catalog.Entidade.ROTULOS[entidade],
+                        "campos": catalog.campos_de(entidade),
+                    }
+                    for entidade in catalog.Entidade.TODAS
+                ]
+            }
+        )
+
+
+class MappingView(_BaseIntegracao):
+    """
+    GET /api/v1/integrations/mappings/           → todos
+    PUT /api/v1/integrations/mappings/<entidade>/ → grava um
+
+    A gravação valida contra o banco DE VERDADE: tabela e coluna precisam
+    existir agora. Aceitar um mapeamento que aponta para o vazio só adiaria
+    a descoberta do erro para a primeira sincronização, quando ela custa
+    muito mais.
+    """
+
+    def get_permissao(self):
+        return (
+            rbac.INTEGRATION_READ
+            if self.request.method == "GET"
+            else rbac.INTEGRATION_MANAGE
+        )
+
+    def initial(self, request, *args, **kwargs):
+        self.permissao_exigida = self.get_permissao()
+        super().initial(request, *args, **kwargs)
+
+    def get(self, request, entidade=None):
+        conexao = self.conexao_da_empresa()
+        if conexao is None:
+            return Response({"mapeamentos": []})
+
+        mapeamentos = {m.entidade: m for m in conexao.mappings.all()}
+        return Response(
+            {
+                "mapeamentos": [
+                    {
+                        "entidade": chave,
+                        "rotulo": catalog.Entidade.ROTULOS[chave],
+                        "tabela": mapeamentos[chave].tabela if chave in mapeamentos else "",
+                        "campos": mapeamentos[chave].campos if chave in mapeamentos else {},
+                        "configurado": chave in mapeamentos,
+                    }
+                    for chave in catalog.Entidade.TODAS
+                ]
+            }
+        )
+
+    def put(self, request, entidade):
+        if entidade not in catalog.Entidade.TODAS:
+            return Response({"detail": "Entidade desconhecida."}, status=400)
+
+        try:
+            conexao = self.exigir_conexao()
+        except FalhaDeConexao as erro:
+            return Response({"detail": str(erro)}, status=400)
+
+        tabela = (request.data.get("tabela") or "").strip()
+        campos = request.data.get("campos") or {}
+
+        if not tabela:
+            return Response(
+                {"detail": "Escolha a tabela que contém estes dados."}, status=400
+            )
+        if not isinstance(campos, dict):
+            return Response({"detail": "Formato de campos inválido."}, status=400)
+
+        # Só as chaves do catálogo entram. Um campo inventado no corpo não
+        # vira coluna lida — o `campos` é JSON e não tem schema do Django
+        # para barrar isso sozinho.
+        conhecidas = catalog.chaves_de(entidade)
+        campos = {
+            k: str(v).strip()
+            for k, v in campos.items()
+            if k in conhecidas and v and str(v).strip()
+        }
+
+        faltando = [
+            c["rotulo"]
+            for c in catalog.campos_de(entidade)
+            if c["obrigatorio"] and not campos.get(c["chave"])
+        ]
+        if faltando:
+            return Response(
+                {"detail": f"Falta apontar: {', '.join(faltando)}."}, status=400
+            )
+
+        try:
+            tabela_real, campos_reais = self._conferir_no_banco(
+                conexao, tabela, campos
+            )
+        except (FalhaDeConexao, CredencialIlegivel, ConsultaBloqueada) as erro:
+            return Response({"detail": str(erro)}, status=400)
+        except Exception:
+            logger.exception("Falha inesperada ao validar mapeamento.")
+            return Response(
+                {"detail": "Não foi possível conferir o mapeamento no banco."},
+                status=400,
+            )
+
+        mapeamento, _ = IntegrationMapping.objects.update_or_create(
+            connection=conexao,
+            entidade=entidade,
+            defaults={"tabela": tabela_real, "campos": campos_reais},
+        )
+
+        audit.record(
+            request.user,
+            AuditLog.Action.UPDATE,
+            "integration_mapping",
+            resource_id=mapeamento.pk,
+            resource_label=f"{catalog.Entidade.ROTULOS[entidade]} → {tabela_real}",
+            # Registra QUAIS campos passaram a ser importados: é o que a
+            # seção 42 pede que o administrador consiga auditar.
+            metadata={"entidade": entidade, "campos": sorted(campos_reais)},
+        )
+        return Response(
+            {
+                "entidade": entidade,
+                "tabela": mapeamento.tabela,
+                "campos": mapeamento.campos,
+                "configurado": True,
+            }
+        )
+
+    def _conferir_no_banco(self, conexao, tabela, campos):
+        """
+        Confere que tabela e colunas existem, e devolve os nomes na grafia
+        do banco — não na que o usuário digitou.
+        """
+        from .query import validar_contra_schema
+
+        with conexao.abrir() as conector:
+            nomes_de_tabela = [
+                t.nome_completo for t in conector.schema_descoberto().values()
+            ]
+            tabela_real = validar_contra_schema(tabela, nomes_de_tabela, "tabela")
+
+            colunas = [c.nome for c in conector.listar_colunas(tabela_real)]
+            campos_reais = {
+                chave: validar_contra_schema(coluna, colunas, "coluna")
+                for chave, coluna in campos.items()
+            }
+        return tabela_real, campos_reais

@@ -13,6 +13,7 @@ import '../../../core/widgets/app_skeleton.dart';
 import '../../../core/widgets/custom_text_field.dart';
 import '../../../shared/models/integration_model.dart';
 import '../providers/integrations_provider.dart';
+import 'mapping_section.dart';
 
 /// Conectar o banco da empresa.
 ///
@@ -347,6 +348,15 @@ class _FormularioState extends ConsumerState<_Formulario> {
               const Divider(),
               const SizedBox(height: AppSpacing.lg),
               _Descoberta(habilitada: widget.conexao.conectando),
+              // O mapeamento só faz sentido depois de a leitura funcionar:
+              // sem as tabelas descobertas não há o que escolher nos
+              // selects, e mostrá-los vazios pareceria defeito.
+              if (widget.conexao.conectando) ...[
+                const SizedBox(height: AppSpacing.xxl),
+                const Divider(),
+                const SizedBox(height: AppSpacing.lg),
+                const MappingSection(),
+              ],
             ],
           ],
         ),

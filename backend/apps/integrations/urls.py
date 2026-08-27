@@ -2,8 +2,10 @@ from django.urls import path
 
 from .views import (
     BancosSuportadosView,
+    CamposDisponiveisView,
     ConnectionView,
     DiscoveryView,
+    MappingView,
     PreviewView,
     TestConnectionView,
 )
@@ -18,4 +20,11 @@ urlpatterns = [
     ),
     path("discovery/", DiscoveryView.as_view(), name="integration_discovery"),
     path("preview/", PreviewView.as_view(), name="integration_preview"),
+    path("fields/", CamposDisponiveisView.as_view(), name="integration_fields"),
+    path("mappings/", MappingView.as_view(), name="integration_mappings"),
+    path(
+        "mappings/<str:entidade>/",
+        MappingView.as_view(),
+        name="integration_mapping",
+    ),
 ]

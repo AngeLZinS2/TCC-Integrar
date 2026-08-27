@@ -125,6 +125,40 @@ class IntegrationsRepository {
     }
   }
 
+  Future<List<EntidadeMapeavel>> getCamposDisponiveis() async {
+    final response = await httpClient.dio.get(ApiConstants.integrationFields);
+    return (response.data['entidades'] as List<dynamic>)
+        .map((e) => EntidadeMapeavel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<List<Mapeamento>> getMapeamentos() async {
+    final response = await httpClient.dio.get(ApiConstants.integrationMappings);
+    return (response.data['mapeamentos'] as List<dynamic>)
+        .map((e) => Mapeamento.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Grava o mapeamento de uma entidade.
+  ///
+  /// O servidor confere tabela e colunas contra o banco de verdade — se
+  /// não existirem lá, nada é gravado, e a mensagem diz o que faltou.
+  Future<Mapeamento> salvarMapeamento({
+    required String entidade,
+    required String tabela,
+    required Map<String, String> campos,
+  }) async {
+    try {
+      final response = await httpClient.dio.put(
+        ApiConstants.integrationMapping(entidade),
+        data: {'tabela': tabela, 'campos': campos},
+      );
+      return Mapeamento.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception(_mensagem(e, 'Não foi possível salvar o mapeamento.'));
+    }
+  }
+
   /// O backend traduz o erro do driver em frase legível — é essa mensagem
   /// que interessa, não o texto cru, que traz host e usuário.
   String _mensagem(DioException e, String padrao) {

@@ -9,6 +9,7 @@ o connector, na hora de abrir a conexão.
 from django.conf import settings
 from django.db import models
 
+from .catalog import Entidade
 from .connectors import BANCOS_SUPORTADOS
 from .crypto import cifrar, decifrar
 
@@ -128,3 +129,57 @@ class ExternalConnection(models.Model):
         from .connectors import connector_para
 
         return connector_para(self.tipo, self.credenciais())
+
+
+class IntegrationMapping(models.Model):
+    """
+    O que cada tabela e cada coluna do cliente significam aqui.
+
+    Um por entidade (funcionários, setores, cargos). `campos` é um JSON
+    `{campo_interno: coluna_externa}` — e não uma tabela de linhas — porque
+    ele nunca é consultado fora do mapeamento: filtrar "todos os
+    mapeamentos cujo campo é nome" não é uma pergunta que alguém faça. Uma
+    tabela ali seria peso sem uso.
+
+    Nada aqui guarda SQL. O administrador escolhe de listas que vieram do
+    próprio banco dele, e o sistema monta a consulta (seção 10 da P4).
+    """
+
+    connection = models.ForeignKey(
+        ExternalConnection, on_delete=models.CASCADE, related_name="mappings"
+    )
+    entidade = models.CharField(max_length=20, choices=Entidade.CHOICES)
+    tabela = models.CharField(
+        max_length=260,
+        help_text="Nome da tabela no banco do cliente, como o banco a reporta.",
+    )
+    campos = models.JSONField(
+        default=dict,
+        help_text="{campo interno: coluna externa}. Campo ausente = não sincronizado.",
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Mapeamento"
+        verbose_name_plural = "Mapeamentos"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["connection", "entidade"],
+                name="um_mapeamento_por_entidade",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.get_entidade_display()} → {self.tabela}"
+
+    @property
+    def colunas_usadas(self) -> list:
+        """
+        As colunas que a sincronização vai ler.
+
+        É o que a tela mostra como "campos importados" — a seção 42 pede
+        que o administrador consiga ver exatamente o que está sendo trazido.
+        """
+        return [c for c in self.campos.values() if c]
