@@ -14,6 +14,7 @@ import '../../../core/widgets/custom_text_field.dart';
 import '../../../shared/models/integration_model.dart';
 import '../providers/integrations_provider.dart';
 import 'mapping_section.dart';
+import 'query_console.dart';
 
 /// Conectar o banco da empresa.
 ///
@@ -356,6 +357,12 @@ class _FormularioState extends ConsumerState<_Formulario> {
                 const Divider(),
                 const SizedBox(height: AppSpacing.lg),
                 const MappingSection(),
+                // Por último, e recolhido: é o caminho de exceção, para
+                // quando os campos acima não cobrem o caso. Colocá-lo em
+                // cima convidaria a escrever SQL antes de tentar o que já
+                // está pronto.
+                const SizedBox(height: AppSpacing.xl),
+                const QueryConsole(),
               ],
             ],
           ],

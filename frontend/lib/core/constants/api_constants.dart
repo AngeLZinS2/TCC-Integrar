@@ -125,6 +125,7 @@ class ApiConstants {
   static const String integrationDiscovery = '/integrations/discovery/';
   static const String integrationPreview = '/integrations/preview/';
   static const String integrationFields = '/integrations/fields/';
+  static const String integrationQuery = '/integrations/query/';
   static const String integrationMappings = '/integrations/mappings/';
   static String integrationMapping(String entidade) =>
       '/integrations/mappings/$entidade/';

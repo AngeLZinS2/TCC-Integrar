@@ -207,6 +207,58 @@ class DataConnector(ABC):
 
         return [dict(zip(colunas, linha)) for linha in linhas]
 
+    def executar_leitura_bruta(self, sql: str, limite: int = 200) -> tuple:
+        """
+        Executa uma consulta escrita à mão pelo administrador.
+
+        **Esta é a única porta do sistema que aceita SQL de fora**, e existe
+        por decisão explícita de produto: alguns ERPs exigem JOIN ou filtro
+        que o mapeamento estruturado não expressa.
+
+        O que se PERDE em relação a `ler()`:
+
+          - camada 1 (a escrita ser inconstruível): aqui há texto do usuário
+          - camada 2 (lista de permitidos): não há identificador a conferir
+
+        O que CONTINUA valendo, e passa a ser a defesa principal:
+
+          - camada 3: a sessão está em transação somente-leitura
+          - camada 4: `exigir_somente_leitura` — uma instrução, começando em
+            SELECT, sem verbo de escrita em lugar nenhum
+          - camada 5: a credencial recomendada só tem SELECT
+
+        E um limite que `ler()` não precisava: as linhas são puxadas com
+        `fetchmany`, e não `fetchall`. Uma consulta sem `WHERE` numa tabela
+        de milhões traria tudo para a memória do servidor — e aqui o texto
+        da consulta não é nosso para acrescentar `LIMIT`, porque cada banco
+        escreve isso de um jeito e o SQL pode já ter o seu.
+        """
+        exigir_somente_leitura(sql)
+
+        if self._conexao is None:
+            raise FalhaDeConexao("A conexão não está aberta.")
+
+        try:
+            cursor = self._conexao.cursor()
+            try:
+                cursor.execute(sql)
+                if cursor.description is None:
+                    # Sem colunas de retorno: não era uma leitura de dados.
+                    raise FalhaDeConexao(
+                        "A consulta não devolveu nenhuma coluna. "
+                        "Use um SELECT que retorne dados."
+                    )
+                colunas = [d[0] for d in cursor.description]
+                linhas = cursor.fetchmany(limite)
+            finally:
+                cursor.close()
+        except (ConsultaBloqueada, FalhaDeConexao):
+            raise
+        except Exception as erro:
+            raise FalhaDeConexao(self.traduzir_erro(erro))
+
+        return colunas, [dict(zip(colunas, linha)) for linha in linhas]
+
     # ── Dialeto ────────────────────────────────────────────────────────
 
     @abstractmethod

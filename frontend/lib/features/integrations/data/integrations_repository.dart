@@ -159,6 +159,33 @@ class IntegrationsRepository {
     }
   }
 
+  /// Executa uma consulta escrita pelo administrador.
+  ///
+  /// Recusa NÃO é exceção: "a trava bloqueou" e "o banco recusou" são
+  /// respostas esperadas de um console de consulta, e a tela precisa do
+  /// motivo para mostrar.
+  Future<ResultadoDaConsulta> executarConsulta(
+    String sql, {
+    int limite = 50,
+  }) async {
+    try {
+      final response = await httpClient.dio.post(
+        ApiConstants.integrationQuery,
+        data: {'sql': sql, 'limite': limite},
+      );
+      return ResultadoDaConsulta.fromJson(response.data);
+    } on DioException catch (e) {
+      final dados = e.response?.data;
+      if (dados is Map<String, dynamic>) {
+        return ResultadoDaConsulta.falha(
+          dados['detail']?.toString() ?? 'Não foi possível executar.',
+          bloqueada: dados['bloqueada'] == true,
+        );
+      }
+      return ResultadoDaConsulta.falha('Não foi possível falar com o servidor.');
+    }
+  }
+
   /// O backend traduz o erro do driver em frase legível — é essa mensagem
   /// que interessa, não o texto cru, que traz host e usuário.
   String _mensagem(DioException e, String padrao) {

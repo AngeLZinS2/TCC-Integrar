@@ -245,3 +245,39 @@ class Mapeamento {
         configurado: json['configurado'] ?? false,
       );
 }
+
+/// O resultado de uma consulta escrita pelo administrador.
+///
+/// `bloqueada` separa duas coisas que a tela precisa dizer de forma
+/// diferente: a trava recusou a consulta (é regra), ou o banco recusou
+/// (é erro de sintaxe, tabela inexistente, permissão).
+class ResultadoDaConsulta {
+  final List<String> colunas;
+  final List<Map<String, String>> linhas;
+  final String? erro;
+  final bool bloqueada;
+
+  const ResultadoDaConsulta({
+    this.colunas = const [],
+    this.linhas = const [],
+    this.erro,
+    this.bloqueada = false,
+  });
+
+  bool get ok => erro == null;
+
+  factory ResultadoDaConsulta.fromJson(Map<String, dynamic> json) {
+    return ResultadoDaConsulta(
+      colunas: (json['colunas'] as List<dynamic>? ?? const [])
+          .map((e) => e.toString())
+          .toList(),
+      linhas: (json['linhas'] as List<dynamic>? ?? const [])
+          .map((e) => (e as Map<String, dynamic>)
+              .map((k, v) => MapEntry(k, v?.toString() ?? '')))
+          .toList(),
+    );
+  }
+
+  factory ResultadoDaConsulta.falha(String mensagem, {bool bloqueada = false}) =>
+      ResultadoDaConsulta(erro: mensagem, bloqueada: bloqueada);
+}

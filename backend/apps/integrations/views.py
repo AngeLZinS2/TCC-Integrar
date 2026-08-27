@@ -25,7 +25,7 @@ from apps.users import rbac
 from . import catalog
 from .connectors import BANCOS_SUPORTADOS, FalhaDeConexao
 from .crypto import CredencialIlegivel
-from .guard import ConsultaBloqueada
+from .guard import ConsultaBloqueada, exigir_somente_leitura
 from .models import ExternalConnection, IntegrationMapping
 from .serializers import (
     ColunaSerializer,
@@ -334,6 +334,113 @@ class DiscoveryView(_BaseIntegracao):
             return Response(
                 {"detail": "Não foi possível ler a estrutura do banco."}, status=400
             )
+
+
+class ConsultaLivreView(_BaseIntegracao):
+    """
+    POST /api/v1/integrations/query/   {"sql": "SELECT ..."}
+
+    Executa uma consulta escrita pelo administrador.
+
+    Esta rota existe por decisão explícita de produto e **contraria a seção
+    10 da P4**, que proíbe campo de SQL livre. Fica registrado aqui para
+    quem ler o código depois entender que é escolha, e não descuido.
+
+    Ela é a única entrada de SQL do sistema, então concentra as proteções
+    que sobraram:
+
+      - exige `integration.manage`, e não apenas leitura;
+      - passa pela trava (`exigir_somente_leitura`) antes de tocar o cursor;
+      - roda na sessão somente-leitura aberta pelo connector;
+      - corta em 200 linhas, com `fetchmany`;
+      - **toda execução vai para a auditoria**, com a consulta inteira. Um
+        poder deste tamanho sem rastro seria pior do que não existir.
+    """
+
+    permissao_exigida = rbac.INTEGRATION_MANAGE
+
+    LIMITE_MAXIMO = 200
+
+    def post(self, request):
+        try:
+            conexao = self.exigir_conexao()
+        except FalhaDeConexao as erro:
+            return Response({"detail": str(erro)}, status=400)
+
+        sql = (request.data.get("sql") or "").strip()
+        if not sql:
+            return Response({"detail": "Escreva a consulta."}, status=400)
+        if len(sql) > 20_000:
+            return Response({"detail": "Consulta longa demais."}, status=400)
+
+        try:
+            limite = min(int(request.data.get("limite", 50)), self.LIMITE_MAXIMO)
+        except (TypeError, ValueError):
+            limite = 50
+
+        # A trava roda ANTES de abrir a conexão.
+        #
+        # Ela também roda dentro do connector, imediatamente antes do
+        # cursor — mas ali é tarde para a mensagem: quem escreveu DELETE
+        # receberia "não foi possível conectar", e ficaria tentando
+        # corrigir a sintaxe de um SQL que a regra nunca deixaria passar.
+        # E não faz sentido gastar uma conexão com o banco do cliente para
+        # uma consulta que já se sabe recusada.
+        try:
+            exigir_somente_leitura(sql)
+        except ConsultaBloqueada as erro:
+            audit.record(
+                request.user,
+                AuditLog.Action.UPDATE,
+                "integration_query",
+                resource_id=conexao.pk,
+                resource_label=f"{conexao.host}/{conexao.banco}",
+                # Tentativa recusada é justamente o que mais importa
+                # registrar: é quem tentou apagar a tabela.
+                metadata={"sql": sql[:4000], "bloqueada": True},
+            )
+            return Response({"detail": str(erro), "bloqueada": True}, status=400)
+
+        # Auditado ANTES de executar: se a consulta derrubar o processo, o
+        # registro do que foi tentado já está gravado.
+        audit.record(
+            request.user,
+            AuditLog.Action.UPDATE,
+            "integration_query",
+            resource_id=conexao.pk,
+            resource_label=f"{conexao.host}/{conexao.banco}",
+            metadata={"sql": sql[:4000]},
+        )
+
+        try:
+            with conexao.abrir() as conector:
+                colunas, linhas = conector.executar_leitura_bruta(sql, limite=limite)
+        except ConsultaBloqueada as erro:
+            # A trava recusou. É o caso mais importante de reportar com
+            # clareza: o administrador precisa saber que foi regra, e não
+            # erro de sintaxe dele.
+            return Response(
+                {"detail": str(erro), "bloqueada": True}, status=400
+            )
+        except (FalhaDeConexao, CredencialIlegivel) as erro:
+            return Response({"detail": str(erro)}, status=400)
+        except Exception:
+            logger.exception("Falha inesperada na consulta livre.")
+            return Response(
+                {"detail": "Não foi possível executar a consulta."}, status=400
+            )
+
+        return Response(
+            {
+                "colunas": colunas,
+                "linhas": [
+                    {k: ("" if v is None else str(v)) for k, v in linha.items()}
+                    for linha in linhas
+                ],
+                "total_exibido": len(linhas),
+                "limite": limite,
+            }
+        )
 
 
 class CamposDisponiveisView(_BaseIntegracao):
