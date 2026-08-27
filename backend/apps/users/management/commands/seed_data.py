@@ -26,6 +26,7 @@ class Command(BaseCommand):
         self.stdout.write("  Dono do sistema:     owner@empresa.com   / senha123")
         self.stdout.write("--------------------------------------------------")
         self.stdout.write("  Empresa Demo:")
+        self.stdout.write("  Admin da empresa:    admin@empresa.com   / senha123")
         self.stdout.write("  Usuario RH:          rh@empresa.com      / senha123")
         self.stdout.write("  Colaborador (TI):    joao@empresa.com    / senha123 (parcial)")
         self.stdout.write("  Colaborador (TI):    ana@empresa.com     / senha123 (100%)")
@@ -33,6 +34,7 @@ class Command(BaseCommand):
         self.stdout.write("  Colaborador (RH):    pedro@empresa.com   / senha123 (nunca acessou)")
         self.stdout.write("--------------------------------------------------")
         self.stdout.write("  Empresa Beta (prova de isolamento entre empresas):")
+        self.stdout.write("  Admin da empresa:    admin@beta.com      / senha123")
         self.stdout.write("  Usuario RH:          rh@beta.com         / senha123")
         self.stdout.write("  Colaborador:         bruno@beta.com      / senha123")
         self.stdout.write("--------------------------------------------------")
@@ -80,6 +82,23 @@ class Command(BaseCommand):
         pos_rh, _ = Position.objects.get_or_create(name="Analista de RH", sector=sector_rh)
 
         # 3. Usuários
+        #
+        # O admin da empresa vem ANTES do RH de propósito: é ele quem, na
+        # hierarquia da P4, configura a estrutura que o RH depois opera.
+        # Sem um usuário neste papel, Unidades, Automações e Integração
+        # ficam inalcançáveis pela interface — as três exigem `company.update`
+        # ou `integration.*`, que o rh_admin não tem.
+        self._create_user(
+            "admin@empresa.com",
+            {
+                "full_name": "Ricardo Alves (Admin)",
+                "role": "company_admin",
+                "company": empresa,
+                "sector": sector_rh,
+                "position": pos_rh,
+                "is_staff": True,
+            },
+        )
         rh_user = self._create_user(
             "rh@empresa.com",
             {
@@ -247,6 +266,14 @@ class Command(BaseCommand):
         )
         position, _ = Position.objects.get_or_create(name="Analista de Operações", sector=sector)
 
+        self._create_user(
+            "admin@beta.com",
+            {
+                "full_name": "Beatriz Nunes (Admin)", "role": "company_admin",
+                "company": empresa, "sector": sector, "position": position,
+                "is_staff": True,
+            },
+        )
         self._create_user(
             "rh@beta.com",
             {"full_name": "Rafaela Souza (RH)", "role": "rh_admin", "company": empresa, "sector": sector, "position": position, "is_staff": True},
