@@ -29,7 +29,11 @@ pytest-django>=4.8,<5.0
 #   oracledb  → Oracle em modo "thin", sem Instant Client
 #   psycopg2  → PostgreSQL, já usado pelo banco da própria plataforma
 PyMySQL>=1.1,<2.0
-oracledb>=2.4,<3.0
+# Faixa larga de proposito: o 4.x e o atual e o que uma instalacao nova
+# pega. Prender em <3.0 fez o contêiner ficar no 2.x enquanto o ambiente
+# local subia para o 4.x — dois majors do mesmo driver entre dev e
+# producao e o caminho curto para "na minha maquina funciona".
+oracledb>=2.4,<5.0
 
 # Cifra as credenciais do banco do cliente antes de gravar.
 cryptography>=42.0,<46.0

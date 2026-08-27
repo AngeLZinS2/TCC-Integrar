@@ -39,6 +39,11 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    # A imagem e NOMEADA para worker e beat reaproveitarem. Os tres rodam o
+    # mesmo codigo; o que muda e o comando. Blocos `build` separados geravam
+    # tres imagens, e `docker compose build backend` deixava as outras duas
+    # para tras — worker e beat quebravam sozinhos a cada dependencia nova.
+    image: tcc-backend:latest
     restart: unless-stopped
     # migrate + seed + runserver (seed_data é idempotente — não duplica dados)
     command: >
@@ -70,9 +75,8 @@ services:
 
   # ── Celery Worker — executa as tasks ───────────────────────────────────────
   worker:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    # Mesma imagem do backend, construida uma vez so.
+    image: tcc-backend:latest
     restart: unless-stopped
     command: celery -A config worker --loglevel=info --concurrency=2
     volumes:
@@ -89,6 +93,9 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      # Garante que a imagem foi construida: e o backend que a define.
+      backend:
+        condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "celery -A config inspect ping -d celery@$$HOSTNAME"]
       interval: 30s
@@ -98,9 +105,8 @@ services:
 
   # ── Celery Beat — dispara as tarefas periódicas ────────────────────────────
   beat:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    # Mesma imagem do backend, construida uma vez so.
+    image: tcc-backend:latest
     restart: unless-stopped
     command: celery -A config beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
     volumes:
@@ -116,6 +122,9 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      # Garante que a imagem foi construida: e o backend que a define.
+      backend:
+        condition: service_started
 
 volumes:
   postgres_data:
