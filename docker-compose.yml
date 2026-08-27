@@ -58,6 +58,12 @@ services:
     env_file:
       - ./backend/.env
     environment:
+      # Sobrepoe o .env de proposito: o `env_file` serve ao ambiente local,
+      # onde SQLite e conveniente. Dentro do compose existe um Postgres, e
+      # deixar o contêiner cair no SQLite mantinha o banco de verdade
+      # parado — com duas bases divergentes e a verificacao acontecendo na
+      # que nao vai para producao.
+      DATABASE_URL: postgres://onboarding_user:onboarding_pass@db:5432/onboarding_db
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/1
       REDIS_CACHE_URL: redis://redis:6379/2
@@ -85,6 +91,12 @@ services:
     env_file:
       - ./backend/.env
     environment:
+      # Sobrepoe o .env de proposito: o `env_file` serve ao ambiente local,
+      # onde SQLite e conveniente. Dentro do compose existe um Postgres, e
+      # deixar o contêiner cair no SQLite mantinha o banco de verdade
+      # parado — com duas bases divergentes e a verificacao acontecendo na
+      # que nao vai para producao.
+      DATABASE_URL: postgres://onboarding_user:onboarding_pass@db:5432/onboarding_db
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/1
       REDIS_CACHE_URL: redis://redis:6379/2
@@ -114,6 +126,12 @@ services:
     env_file:
       - ./backend/.env
     environment:
+      # Sobrepoe o .env de proposito: o `env_file` serve ao ambiente local,
+      # onde SQLite e conveniente. Dentro do compose existe um Postgres, e
+      # deixar o contêiner cair no SQLite mantinha o banco de verdade
+      # parado — com duas bases divergentes e a verificacao acontecendo na
+      # que nao vai para producao.
+      DATABASE_URL: postgres://onboarding_user:onboarding_pass@db:5432/onboarding_db
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/1
       REDIS_CACHE_URL: redis://redis:6379/2

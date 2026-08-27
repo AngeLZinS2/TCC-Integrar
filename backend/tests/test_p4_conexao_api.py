@@ -18,6 +18,7 @@ from apps.integrations.models import ExternalConnection
 CONEXAO = "/api/v1/integrations/connection/"
 TESTE = "/api/v1/integrations/connection/test/"
 DESCOBERTA = "/api/v1/integrations/discovery/"
+AMOSTRA = "/api/v1/integrations/preview/"
 BANCOS = "/api/v1/integrations/databases/"
 
 SENHA = "S3nh4-secreta-do-ERP"
@@ -300,6 +301,48 @@ class TestSemConexao:
     def test_descobrir_sem_conexao_explica_o_que_fazer(self, api_client, admin):
         api_client.force_authenticate(user=admin)
         resp = api_client.get(DESCOBERTA)
+
+        assert resp.status_code == 400
+        assert "Configure a conexão" in resp.data["detail"]
+
+
+@pytest.mark.django_db
+class TestAmostra:
+    def test_colaborador_nao_ve_amostra(self, api_client, colab):
+        """
+        A amostra mostra DADOS do banco do cliente — nomes, e-mails, CPF.
+        É a rota mais sensível do módulo.
+        """
+        api_client.force_authenticate(user=colab)
+        assert api_client.get(AMOSTRA).status_code == 403
+
+    def test_rh_nao_ve_amostra(self, api_client, rh):
+        api_client.force_authenticate(user=rh)
+        assert api_client.get(AMOSTRA).status_code == 403
+
+    def test_sem_tabela_explica_o_que_falta(self, api_client, admin, conexao):
+        api_client.force_authenticate(user=admin)
+        resp = api_client.get(AMOSTRA)
+
+        assert resp.status_code == 400
+        assert "tabela" in resp.data["detail"].lower()
+
+    def test_sem_conexao_explica_o_que_fazer(self, api_client, admin):
+        api_client.force_authenticate(user=admin)
+        resp = api_client.get(f"{AMOSTRA}?tabela=FUNCIONARIOS")
+
+        assert resp.status_code == 400
+        assert "Configure a conexão" in resp.data["detail"]
+
+    def test_admin_de_outra_empresa_nao_le_a_amostra(
+        self, api_client, admin_b, conexao
+    ):
+        """
+        Sem escopo, o admin da B leria os dados de funcionários da A — o
+        vazamento mais direto que este módulo poderia ter.
+        """
+        api_client.force_authenticate(user=admin_b)
+        resp = api_client.get(f"{AMOSTRA}?tabela=FUNCIONARIOS")
 
         assert resp.status_code == 400
         assert "Configure a conexão" in resp.data["detail"]

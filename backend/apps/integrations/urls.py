@@ -4,6 +4,7 @@ from .views import (
     BancosSuportadosView,
     ConnectionView,
     DiscoveryView,
+    PreviewView,
     TestConnectionView,
 )
 
@@ -16,4 +17,5 @@ urlpatterns = [
         name="integration_connection_test",
     ),
     path("discovery/", DiscoveryView.as_view(), name="integration_discovery"),
+    path("preview/", PreviewView.as_view(), name="integration_preview"),
 ]

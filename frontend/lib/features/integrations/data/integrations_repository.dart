@@ -111,6 +111,20 @@ class IntegrationsRepository {
     }
   }
 
+  /// Uma amostra das primeiras linhas — o que o administrador confere
+  /// antes de mapear campo nenhum.
+  Future<AmostraDaTabela> getAmostra(String tabela, {int limite = 10}) async {
+    try {
+      final response = await httpClient.dio.get(
+        ApiConstants.integrationPreview,
+        queryParameters: {'tabela': tabela, 'limite': limite},
+      );
+      return AmostraDaTabela.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception(_mensagem(e, 'Não foi possível ler os dados.'));
+    }
+  }
+
   /// O backend traduz o erro do driver em frase legível — é essa mensagem
   /// que interessa, não o texto cru, que traz host e usuário.
   String _mensagem(DioException e, String padrao) {

@@ -27,3 +27,8 @@ final colunasProvider =
     FutureProvider.autoDispose.family<List<ColunaExterna>, String>((ref, tabela) {
   return ref.watch(integrationsRepositoryProvider).getColunas(tabela);
 });
+
+final amostraProvider =
+    FutureProvider.autoDispose.family<AmostraDaTabela, String>((ref, tabela) {
+  return ref.watch(integrationsRepositoryProvider).getAmostra(tabela);
+});

@@ -579,6 +579,11 @@ class _ChipDeTabela extends ConsumerWidget {
   }
 }
 
+/// O que o administrador vê ao clicar numa tabela.
+///
+/// Duas abas porque são duas perguntas diferentes: "quais campos existem"
+/// e "o que tem dentro". A segunda é a que dá confiança de que o sistema
+/// está lendo a tabela certa antes de mapear qualquer coisa.
 class _ColunasDialog extends ConsumerWidget {
   final TabelaExterna tabela;
 
@@ -586,51 +591,164 @@ class _ColunasDialog extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    return DefaultTabController(
+      length: 2,
+      child: AlertDialog(
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(tabela.nome),
+            const SizedBox(height: AppSpacing.sm),
+            const TabBar(
+              tabs: [
+                Tab(text: 'Campos'),
+                Tab(text: 'Amostra dos dados'),
+              ],
+            ),
+          ],
+        ),
+        content: SizedBox(
+          width: 620,
+          height: 400,
+          child: TabBarView(
+            children: [
+              _Campos(tabela: tabela),
+              _Amostra(tabela: tabela),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Fechar'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Campos extends ConsumerWidget {
+  final TabelaExterna tabela;
+
+  const _Campos({required this.tabela});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final colunasAsync = ref.watch(colunasProvider(tabela.nomeCompleto));
 
-    return AlertDialog(
-      title: Text(tabela.nome),
-      content: SizedBox(
-        width: 460,
-        height: 380,
-        child: colunasAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (erro, _) => AppErrorState(
-            message: erro.toString().replaceFirst('Exception: ', ''),
-            onRetry: () =>
-                ref.invalidate(colunasProvider(tabela.nomeCompleto)),
-          ),
-          data: (colunas) => ListView.separated(
-            itemCount: colunas.length,
-            separatorBuilder: (_, __) => const Divider(height: 1),
-            itemBuilder: (_, i) {
-              final c = colunas[i];
-              return ListTile(
-                dense: true,
-                leading: Icon(
-                  c.eChave ? Icons.key : Icons.abc,
-                  size: 18,
-                  color: c.eChave
-                      ? AppColors.warning
-                      : context.textMutedColor,
-                ),
-                title: Text(c.nome, style: context.textTheme.bodyMedium),
-                subtitle: Text(
-                  c.aceitaNulo ? '${c.tipo} · pode ficar vazio' : c.tipo,
-                  style: context.textTheme.bodySmall
-                      ?.copyWith(color: context.textSecondaryColor),
-                ),
-              );
-            },
-          ),
-        ),
+    return colunasAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (erro, _) => AppErrorState(
+        message: erro.toString().replaceFirst('Exception: ', ''),
+        onRetry: () => ref.invalidate(colunasProvider(tabela.nomeCompleto)),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Fechar'),
-        ),
-      ],
+      data: (colunas) => ListView.separated(
+        itemCount: colunas.length,
+        separatorBuilder: (_, __) => const Divider(height: 1),
+        itemBuilder: (_, i) {
+          final c = colunas[i];
+          return ListTile(
+            dense: true,
+            leading: Icon(
+              c.eChave ? Icons.key : Icons.abc,
+              size: 18,
+              color: c.eChave ? AppColors.warning : context.textMutedColor,
+            ),
+            title: Text(c.nome, style: context.textTheme.bodyMedium),
+            subtitle: Text(
+              c.aceitaNulo ? '${c.tipo} · pode ficar vazio' : c.tipo,
+              style: context.textTheme.bodySmall
+                  ?.copyWith(color: context.textSecondaryColor),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// As primeiras linhas, como o banco as devolve.
+///
+/// A tabela rola nos dois eixos: um ERP costuma ter vinte colunas, e
+/// espremer tudo na largura tornaria o conteúdo ilegível justamente na
+/// tela em que ele precisa ser conferido.
+class _Amostra extends ConsumerWidget {
+  final TabelaExterna tabela;
+
+  const _Amostra({required this.tabela});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final amostraAsync = ref.watch(amostraProvider(tabela.nomeCompleto));
+
+    return amostraAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (erro, _) => AppErrorState(
+        message: erro.toString().replaceFirst('Exception: ', ''),
+        onRetry: () => ref.invalidate(amostraProvider(tabela.nomeCompleto)),
+      ),
+      data: (amostra) {
+        if (amostra.linhas.isEmpty) {
+          return const AppEmptyState(
+            icon: Icons.inbox_outlined,
+            title: 'Tabela vazia',
+            description: 'O sistema leu a tabela, mas ela não tem registros.',
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Primeiras ${amostra.linhas.length} linhas, apenas para '
+              'conferência. Nada foi alterado no seu banco.',
+              style: context.textTheme.bodySmall
+                  ?.copyWith(color: context.textSecondaryColor),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Expanded(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: SingleChildScrollView(
+                  child: DataTable(
+                    columnSpacing: AppSpacing.xl,
+                    headingRowHeight: 38,
+                    dataRowMinHeight: 34,
+                    dataRowMaxHeight: 34,
+                    columns: [
+                      for (final c in amostra.colunas)
+                        DataColumn(
+                          label: Text(
+                            c,
+                            style: context.textTheme.bodySmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                    ],
+                    rows: [
+                      for (final linha in amostra.linhas)
+                        DataRow(
+                          cells: [
+                            for (final c in amostra.colunas)
+                              DataCell(
+                                Text(
+                                  linha[c] ?? '',
+                                  style: context.textTheme.bodySmall,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                          ],
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

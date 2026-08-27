@@ -207,6 +207,75 @@ class TestConnectionView(_BaseIntegracao):
         return Response(resposta, status=200 if resposta["ok"] else 400)
 
 
+class PreviewView(_BaseIntegracao):
+    """
+    GET /api/v1/integrations/preview/?tabela=X&limite=N
+
+    Uma amostra das primeiras linhas — o "select modelo" que mostra ao
+    administrador o que o sistema está lendo, antes de ele mapear campo
+    nenhum.
+
+    Passa pelo `ler()` do connector, e não por consulta própria: é o mesmo
+    caminho que a sincronização vai usar, com as cinco camadas da trava.
+    Uma leitura de amostra por um atalho seria justamente a que ninguém
+    lembraria de proteger.
+    """
+
+    def get(self, request):
+        try:
+            conexao = self.exigir_conexao()
+        except FalhaDeConexao as erro:
+            return Response({"detail": str(erro)}, status=400)
+
+        tabela = request.query_params.get("tabela")
+        if not tabela:
+            return Response(
+                {"detail": "Informe a tabela que deseja visualizar."}, status=400
+            )
+
+        # Teto baixo: isto é uma amostra para conferência visual, não
+        # exportação. Trazer mais só encheria a tela e a memória.
+        try:
+            limite = min(int(request.query_params.get("limite", 10)), 50)
+        except (TypeError, ValueError):
+            limite = 10
+
+        try:
+            with conexao.abrir() as conector:
+                from .query import validar_contra_schema
+
+                conhecidas = [
+                    t.nome_completo for t in conector.schema_descoberto().values()
+                ]
+                real = validar_contra_schema(tabela, conhecidas, "tabela")
+
+                colunas = conector.listar_colunas(real)
+                nomes = [c.nome for c in colunas]
+                linhas = conector.ler(real, nomes, limite=limite)
+
+            return Response(
+                {
+                    "tabela": real,
+                    "colunas": nomes,
+                    "linhas": [
+                        # Tudo vira texto: a tela só exibe, e data, decimal
+                        # e bytes de cada banco não têm equivalente em JSON.
+                        {k: ("" if v is None else str(v)) for k, v in linha.items()}
+                        for linha in linhas
+                    ],
+                    "total_exibido": len(linhas),
+                }
+            )
+        except (FalhaDeConexao, CredencialIlegivel, ConsultaBloqueada) as erro:
+            return Response({"detail": str(erro)}, status=400)
+        except Exception:
+            logger.exception("Falha inesperada ao ler amostra do banco externo.")
+            return Response(
+                {"detail": "Não foi possível ler os dados desta tabela."},
+                status=400,
+            )
+
+
 class DiscoveryView(_BaseIntegracao):
     """
     GET /api/v1/integrations/discovery/            → tabelas

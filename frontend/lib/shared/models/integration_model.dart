@@ -139,3 +139,32 @@ class ColunaExterna {
         eChave: json['e_chave'] ?? false,
       );
 }
+
+/// Uma amostra do que o banco devolve.
+///
+/// Tudo em texto: a tela só exibe, e data, decimal e bytes de cada banco
+/// não têm equivalente direto em JSON.
+class AmostraDaTabela {
+  final String tabela;
+  final List<String> colunas;
+  final List<Map<String, String>> linhas;
+
+  const AmostraDaTabela({
+    required this.tabela,
+    required this.colunas,
+    required this.linhas,
+  });
+
+  factory AmostraDaTabela.fromJson(Map<String, dynamic> json) {
+    return AmostraDaTabela(
+      tabela: json['tabela'] ?? '',
+      colunas: (json['colunas'] as List<dynamic>? ?? const [])
+          .map((e) => e.toString())
+          .toList(),
+      linhas: (json['linhas'] as List<dynamic>? ?? const [])
+          .map((e) => (e as Map<String, dynamic>)
+              .map((k, v) => MapEntry(k, v?.toString() ?? '')))
+          .toList(),
+    );
+  }
+}
