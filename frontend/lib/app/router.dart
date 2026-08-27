@@ -25,6 +25,7 @@ import '../features/documents/presentation/documents_screen.dart';
 import '../features/onboarding/presentation/tasks_screen.dart';
 import '../features/units/presentation/units_screen.dart';
 import '../features/automations/presentation/automations_screen.dart';
+import '../features/integrations/presentation/integration_screen.dart';
 import '../features/courses/presentation/quiz_screen.dart';
 import '../features/events/presentation/events_screen.dart';
 import '../features/events/presentation/new_event_screen.dart';
@@ -379,6 +380,14 @@ final routerProvider = Provider<GoRouter>((ref) {
             pageBuilder: (context, state) => paginaComTransicao(
               chave: state.pageKey,
               filho: const AutomationsScreen(),
+            ),
+          ),
+          GoRoute(
+            path: '/integrations',
+            name: 'integrations',
+            pageBuilder: (context, state) => paginaComTransicao(
+              chave: state.pageKey,
+              filho: const IntegrationScreen(),
             ),
           ),
           GoRoute(

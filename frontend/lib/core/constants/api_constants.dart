@@ -117,4 +117,10 @@ class ApiConstants {
   static String quizSubmit(int courseId, int attemptId) =>
       '/courses/$courseId/quiz/attempts/$attemptId/submit/';
   static const String myQuizAttempts = '/courses/my-attempts/';
+
+  // Integração com o banco da empresa (P4)
+  static const String integrationDatabases = '/integrations/databases/';
+  static const String integrationConnection = '/integrations/connection/';
+  static const String integrationConnectionTest = '/integrations/connection/test/';
+  static const String integrationDiscovery = '/integrations/discovery/';
 }

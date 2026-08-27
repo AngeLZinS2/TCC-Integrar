@@ -45,6 +45,7 @@ urlpatterns = [
                 path("onboarding/", include("apps.onboarding.urls")),
                 path("units/", include("apps.units.urls")),
                 path("automations/", include("apps.automations.urls")),
+                path("integrations/", include("apps.integrations.urls")),
             ]
         ),
     ),

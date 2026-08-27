@@ -227,6 +227,61 @@ class TestIdentificadores:
             )
         assert "não existe" in str(erro.value)
 
+    def test_nome_qualificado_e_aceito(self):
+        """
+        `public.funcionarios` é o formato que a descoberta devolve no
+        PostgreSQL. Rejeitá-lo quebrava a rota de colunas inteira — o
+        regex validava a string toda e o ponto nunca passava.
+        """
+        assert validar_identificador("public.funcionarios", "tabela") == (
+            "public.funcionarios"
+        )
+
+    @pytest.mark.parametrize(
+        "nome",
+        [
+            "banco.schema.tabela",   # atravessar para outro banco
+            ".funcionarios",         # parte vazia
+            "public.",               # parte vazia
+            "public..funcionarios",  # parte vazia no meio
+            "public.func;drop",      # injeção numa das partes
+        ],
+    )
+    def test_nome_com_ponto_malformado_e_recusado(self, nome):
+        with pytest.raises(IdentificadorInvalido):
+            validar_identificador(nome, "tabela")
+
+    def test_nome_curto_encontra_a_tabela_qualificada(self):
+        """
+        Quem escolhe da tela vê "FUNCIONARIOS", não "public.FUNCIONARIOS".
+        Exigir o qualificado transformaria a escolha num quebra-cabeça.
+        """
+        real = validar_contra_schema(
+            "funcionarios", ["public.funcionarios", "public.cargos"], "tabela"
+        )
+        assert real == "public.funcionarios"
+
+    def test_nome_curto_ambiguo_pede_o_completo(self):
+        """
+        Duas tabelas com o mesmo nome em schemas diferentes: escolher uma
+        em silêncio leria os dados errados sem ninguém perceber.
+        """
+        with pytest.raises(IdentificadorInvalido) as erro:
+            validar_contra_schema(
+                "funcionarios",
+                ["rh.funcionarios", "folha.funcionarios"],
+                "tabela",
+            )
+        assert "mais de um schema" in str(erro.value)
+
+    def test_nome_qualificado_exato_vence_a_busca_pelo_curto(self):
+        real = validar_contra_schema(
+            "folha.funcionarios",
+            ["rh.funcionarios", "folha.funcionarios"],
+            "tabela",
+        )
+        assert real == "folha.funcionarios"
+
     def test_schema_devolve_a_grafia_do_banco(self):
         """
         Oracle reporta em caixa alta. Usar a grafia digitada pelo usuário

@@ -175,6 +175,12 @@ class AppSidebar extends ConsumerWidget {
                           isSelected: currentRoute.startsWith('/automations'),
                           onTap: () => context.go('/automations'),
                         ),
+                        _SidebarItem(
+                          icon: Icons.cable_outlined,
+                          label: 'Integração',
+                          isSelected: currentRoute.startsWith('/integrations'),
+                          onTap: () => context.go('/integrations'),
+                        ),
                       ],
                       if (user?.managesCompany == true)
                         _SidebarItem(

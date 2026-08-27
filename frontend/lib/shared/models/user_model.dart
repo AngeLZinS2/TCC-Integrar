@@ -15,6 +15,9 @@ abstract final class Perm {
   static const dashboardRead = 'dashboard.read';
   static const auditRead = 'audit.read';
   static const platformCompaniesManage = 'platform.companies.manage';
+  static const integrationRead = 'integration.read';
+  static const integrationManage = 'integration.manage';
+  static const integrationSync = 'integration.sync';
 }
 
 class UserModel {
@@ -93,6 +96,13 @@ class UserModel {
   /// servidor — aqui é só para decidir se o botão aparece.
   bool get canManageOnboarding =>
       managesCompany || isGestor || isSectorLeader;
+
+  /// Configura a integração com o banco da empresa.
+  ///
+  /// Só o administrador da empresa: um mapeamento errado reescreve o
+  /// cadastro inteiro na próxima sincronização. O servidor recusa do mesmo
+  /// jeito — aqui é só para decidir se o item aparece no menu.
+  bool get canManageIntegration => can(Perm.integrationManage);
   bool get canViewDashboard => can(Perm.dashboardRead);
   bool get canViewAudit => can(Perm.auditRead);
   bool get canEditCompany => can(Perm.companyUpdate);

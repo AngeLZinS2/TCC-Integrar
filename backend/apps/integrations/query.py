@@ -32,19 +32,33 @@ def validar_identificador(nome: str, rotulo: str = "identificador") -> str:
     """
     Confere a FORMA do nome.
 
+    Aceita `schema.tabela`, validando CADA PARTE em separado — o ponto é o
+    único caractere que atravessa as partes, e nada além dele. Validar a
+    string inteira contra um regex sem ponto rejeitava todo nome
+    qualificado, que é exatamente o formato que a descoberta devolve no
+    PostgreSQL.
+
     Primeira peneira, e não a última: mesmo um nome bem formado ainda
-    precisa constar do schema (ver `validar_contra_schema`). Aqui só se
-    barra o que nem parece um identificador — parêntese, espaço, aspas,
-    ponto-e-vírgula.
+    precisa constar do schema (ver `validar_contra_schema`).
     """
     if not isinstance(nome, str) or not nome:
         raise IdentificadorInvalido(f"{rotulo.capitalize()} vazio.")
-    if len(nome) > 128:
+    if len(nome) > 260:
         raise IdentificadorInvalido(f"{rotulo.capitalize()} longo demais.")
-    if not _IDENTIFICADOR.match(nome):
+
+    partes = nome.split(".")
+    if len(partes) > 2:
+        # `a.b.c` não é schema.tabela: ou é engano, ou é tentativa de
+        # atravessar para outro banco.
         raise IdentificadorInvalido(
             f"{rotulo.capitalize()} inválido: {nome!r}."
         )
+
+    for parte in partes:
+        if not parte or len(parte) > 128 or not _IDENTIFICADOR.match(parte):
+            raise IdentificadorInvalido(
+                f"{rotulo.capitalize()} inválido: {nome!r}."
+            )
     return nome
 
 
@@ -63,13 +77,35 @@ def validar_contra_schema(
     """
     validar_identificador(nome, rotulo)
 
-    por_minuscula = {str(p).lower(): str(p) for p in permitidos}
+    permitidos = [str(p) for p in permitidos]
+    por_minuscula = {p.lower(): p for p in permitidos}
+
+    # Nome exato (qualificado ou não), do jeito que o banco reportou.
     real = por_minuscula.get(nome.lower())
-    if real is None:
-        raise IdentificadorInvalido(
-            f"{rotulo.capitalize()} {nome!r} não existe no banco conectado."
-        )
-    return real
+    if real is not None:
+        return real
+
+    # Nome curto quando a lista guarda `schema.tabela`: quem escolhe da
+    # tela vê "FUNCIONARIOS", não "public.FUNCIONARIOS", e exigir o
+    # qualificado transformaria a escolha num quebra-cabeça.
+    if "." not in nome:
+        curto = nome.lower()
+        candidatos = [
+            p for p in permitidos if p.lower().rsplit(".", 1)[-1] == curto
+        ]
+        if len(candidatos) == 1:
+            return candidatos[0]
+        if len(candidatos) > 1:
+            # Dois schemas com a mesma tabela: escolher um em silêncio
+            # leria os dados errados sem ninguém perceber.
+            raise IdentificadorInvalido(
+                f"{rotulo.capitalize()} {nome!r} existe em mais de um schema. "
+                f"Informe o nome completo, por exemplo {candidatos[0]!r}."
+            )
+
+    raise IdentificadorInvalido(
+        f"{rotulo.capitalize()} {nome!r} não existe no banco conectado."
+    )
 
 
 def montar_select(
