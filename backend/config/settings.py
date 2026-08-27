@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     "apps.onboarding",
     "apps.units",
     "apps.automations",
+    "apps.integrations",
     "django_celery_beat",
 ]
 
@@ -266,6 +267,11 @@ CELERY_BEAT_SCHEDULE = {
 # ── Cache (Redis) ─────────────────────────────────────────────────────────────
 # Substitui o LocMemCache, que é por processo — com mais de um worker, o
 # throttle de login contava separado em cada um, multiplicando o limite.
+# Cifra as credenciais do banco externo (P4). Separada da SECRET_KEY de
+# proposito: girar a SECRET_KEY por incidente de seguranca nao pode tornar
+# ilegivel toda credencial de integracao ja salva.
+INTEGRATION_ENCRYPTION_KEY = env("INTEGRATION_ENCRYPTION_KEY", default="")
+
 REDIS_CACHE_URL = env("REDIS_CACHE_URL", default="")
 if REDIS_CACHE_URL:
     CACHES = {

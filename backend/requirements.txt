@@ -21,6 +21,19 @@ psycopg2-binary>=2.9,<3.0
 pytest>=8.0,<9.0
 pytest-django>=4.8,<5.0
 
+# ── Integração com banco externo (P4) ─────────────────────────────────────────
+# Todos em Python puro ou com wheel pronta: nenhum exige compilador nem
+# biblioteca de sistema no contêiner.
+#
+#   PyMySQL   → MySQL e MariaDB (mesmo protocolo)
+#   oracledb  → Oracle em modo "thin", sem Instant Client
+#   psycopg2  → PostgreSQL, já usado pelo banco da própria plataforma
+PyMySQL>=1.1,<2.0
+oracledb>=2.4,<3.0
+
+# Cifra as credenciais do banco do cliente antes de gravar.
+cryptography>=42.0,<46.0
+
 # ── Fila assíncrona ───────────────────────────────────────────────────────────
 celery>=5.4,<6.0
 redis>=5.0,<6.0

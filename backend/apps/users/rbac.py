@@ -56,6 +56,15 @@ COMPANY_UPDATE = "company.update"
 
 DASHBOARD_READ = "dashboard.read"
 
+# Integração com o banco de origem da empresa (P4). Fora do alcance do RH:
+# um mapeamento errado não erra um registro — reescreve o cadastro inteiro
+# na próxima sincronização. É decisão de estrutura, mesmo critério já
+# aplicado a Unidades e Automações.
+INTEGRATION_READ = "integration.read"
+INTEGRATION_MANAGE = "integration.manage"
+INTEGRATION_SYNC = "integration.sync"
+INTEGRATION_CREDENTIALS = "integration.credentials"
+
 AUDIT_READ = "audit.read"
 
 # Permissões exclusivas do dono da plataforma — administram o SaaS, nunca
@@ -75,6 +84,8 @@ ALL_PERMISSIONS = frozenset(
         COMPANY_READ, COMPANY_UPDATE,
         DASHBOARD_READ,
         AUDIT_READ,
+        INTEGRATION_READ, INTEGRATION_MANAGE,
+        INTEGRATION_SYNC, INTEGRATION_CREDENTIALS,
         PLATFORM_COMPANIES_READ, PLATFORM_COMPANIES_MANAGE,
     }
 )
@@ -128,7 +139,16 @@ ROLE_PERMISSIONS = {
     ROLE_OWNER: frozenset({PLATFORM_COMPANIES_READ, PLATFORM_COMPANIES_MANAGE}),
 
     # Admin da empresa: tudo que o RH faz + configurar a empresa + auditoria.
-    ROLE_COMPANY_ADMIN: frozenset(_RH_PERMISSIONS | {COMPANY_UPDATE, AUDIT_READ}),
+    ROLE_COMPANY_ADMIN: frozenset(
+        _RH_PERMISSIONS
+        | {COMPANY_UPDATE, AUDIT_READ}
+        # A integração é exclusiva do admin da empresa: a seção 2 da P4 a
+        # lista como responsabilidade dele, e não do RH.
+        | {
+            INTEGRATION_READ, INTEGRATION_MANAGE,
+            INTEGRATION_SYNC, INTEGRATION_CREDENTIALS,
+        }
+    ),
 
     ROLE_RH_ADMIN: frozenset(_RH_PERMISSIONS),
 

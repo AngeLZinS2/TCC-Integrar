@@ -39,3 +39,7 @@ CELERY_TASK_EAGER_PROPAGATES = True
 # mediafiles/ real — nenhum teste deixa arquivo para tras.
 import tempfile
 MEDIA_ROOT = tempfile.mkdtemp(prefix="tcc-test-media-")
+
+# Chave fixa para os testes: a cifra precisa ser deterministica entre
+# execucoes, e este valor nunca sai daqui.
+INTEGRATION_ENCRYPTION_KEY = "chave-de-teste-nao-usar-em-producao"
